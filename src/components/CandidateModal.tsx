@@ -13,23 +13,16 @@ const STATUSES: CandidateStatus[] = [
   'Rejected',
 ];
 
-/**
- * ✅ Form data ≠ database row
- */
-export type CandidateFormData = {
-  full_name: string;
-  email: string | null;
-  phone: string | null;
-  linkedin_url: string | null;
-  resume_url: string | null;
-  status: CandidateStatus;
-};
-
 interface CandidateModalProps {
   isOpen: boolean;
   candidate?: Candidate;
   onClose: () => void;
-  onSubmit: (data: CandidateFormData) => Promise<void>;
+  onSubmit: (
+    data: Omit<
+      Database['public']['Tables']['candidates']['Insert'],
+      'id' | 'created_by' | 'created_at' | 'updated_at'
+    >
+  ) => Promise<void>;
 }
 
 export function CandidateModal({
@@ -68,8 +61,8 @@ export function CandidateModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
     setLoading(true);
+    setError('');
 
     try {
       await onSubmit({
@@ -82,12 +75,7 @@ export function CandidateModal({
       });
       onClose();
     } catch (err) {
-      console.error(err);
-      setError(
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as any).message)
-          : 'Failed to save candidate'
-      );
+      setError(err instanceof Error ? err.message : 'Failed to save candidate');
     } finally {
       setLoading(false);
     }
@@ -96,115 +84,82 @@ export function CandidateModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 sticky top-0 bg-white">
-          <h2 className="text-xl font-bold text-gray-900">
+        <div className="flex items-center justify-between p-6 border-b">
+          <h2 className="text-xl font-bold">
             {candidate ? 'Edit Candidate' : 'New Candidate'}
           </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button onClick={onClose}>
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="p-3 bg-red-50 border border-red-200 rounded">
               <p className="text-sm text-red-600">{error}</p>
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Full Name
-            </label>
-            <input
-              type="text"
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
+          <input
+            type="text"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            placeholder="Full name"
+            required
+            className="w-full input"
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            className="w-full input"
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone
-            </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="Phone"
+            className="w-full input"
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              LinkedIn URL
-            </label>
-            <input
-              type="url"
-              value={linkedinUrl}
-              onChange={(e) => setLinkedinUrl(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
+          <input
+            type="url"
+            value={linkedinUrl}
+            onChange={(e) => setLinkedinUrl(e.target.value)}
+            placeholder="LinkedIn URL"
+            className="w-full input"
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Resume URL
-            </label>
-            <input
-              type="url"
-              value={resumeUrl}
-              onChange={(e) => setResumeUrl(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            />
-          </div>
+          <input
+            type="url"
+            value={resumeUrl}
+            onChange={(e) => setResumeUrl(e.target.value)}
+            placeholder="Resume URL"
+            className="w-full input"
+          />
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as CandidateStatus)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-            >
-              {STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value as CandidateStatus)}
+            className="w-full input"
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </select>
 
           <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 bg-gray-100 rounded-lg"
-            >
+            <button type="button" onClick={onClose} className="btn-secondary">
               Cancel
             </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
-            >
+            <button type="submit" disabled={loading} className="btn-primary">
               {loading ? 'Saving...' : 'Save'}
             </button>
           </div>

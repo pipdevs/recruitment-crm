@@ -4,14 +4,7 @@ import type { Database, CandidateStatus } from '../lib/database.types';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
 
-const STATUSES: CandidateStatus[] = [
-  'New',
-  'Screening',
-  'Interview',
-  'Offer',
-  'Hired',
-  'Rejected',
-];
+const STATUSES: CandidateStatus[] = ['New', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
 
 interface CandidateModalProps {
   isOpen: boolean;
@@ -96,7 +89,9 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Full Name
+            </label>
             <input
               type="text"
               value={fullName}
@@ -108,7 +103,9 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
             <input
               type="email"
               value={email}
@@ -119,7 +116,9 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Phone
+            </label>
             <input
               type="tel"
               value={phone}
@@ -130,7 +129,9 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              LinkedIn URL
+            </label>
             <input
               type="url"
               value={linkedinUrl}
@@ -141,7 +142,9 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Resume URL</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Resume URL
+            </label>
             <input
               type="url"
               value={resumeUrl}
@@ -152,7 +155,9 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Status
+            </label>
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as CandidateStatus)}

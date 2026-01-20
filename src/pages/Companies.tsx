@@ -37,18 +37,27 @@ export function Companies() {
     }
   };
 
-  const handleCreate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleCreate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
     try {
-      const newCompany = await companiesService.create({
-        ...data,
-        created_by: user?.id || null,
-      });
-      setCompanies([newCompany, ...companies]);
-      setModalOpen(false);
-    } catch (err) {
-      throw err;
+      // Only include the fields from the form
+      const insertData = {
+        name: data.name,
+        industry: data.industry,
+        website: data.website,
+        notes: data.notes,
+      };
+
+    const newCompany = await companiesService.create(insertData);
+
+    setCompanies([newCompany, ...companies]);
+    setModalOpen(false);
+        } catch (err) {
+      console.error('Failed to create company:', err);
+      throw err; // this will be caught in the modal and displayed
     }
   };
+
+
 
   const handleUpdate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     if (!selectedCompany) return;

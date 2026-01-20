@@ -4,16 +4,40 @@ import type { Database, CandidateStatus } from '../lib/database.types';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
 
-const STATUSES: CandidateStatus[] = ['New', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
+const STATUSES: CandidateStatus[] = [
+  'New',
+  'Screening',
+  'Interview',
+  'Offer',
+  'Hired',
+  'Rejected',
+];
+
+/**
+ * ✅ Form data ≠ database row
+ */
+export type CandidateFormData = {
+  full_name: string;
+  email: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
+  resume_url: string | null;
+  status: CandidateStatus;
+};
 
 interface CandidateModalProps {
   isOpen: boolean;
   candidate?: Candidate;
   onClose: () => void;
-  onSubmit: (data: Omit<Candidate, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onSubmit: (data: CandidateFormData) => Promise<void>;
 }
 
-export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: CandidateModalProps) {
+export function CandidateModal({
+  isOpen,
+  candidate,
+  onClose,
+  onSubmit,
+}: CandidateModalProps) {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -26,10 +50,10 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
   useEffect(() => {
     if (candidate) {
       setFullName(candidate.full_name);
-      setEmail(candidate.email || '');
-      setPhone(candidate.phone || '');
-      setLinkedinUrl(candidate.linkedin_url || '');
-      setResumeUrl(candidate.resume_url || '');
+      setEmail(candidate.email ?? '');
+      setPhone(candidate.phone ?? '');
+      setLinkedinUrl(candidate.linkedin_url ?? '');
+      setResumeUrl(candidate.resume_url ?? '');
       setStatus(candidate.status);
     } else {
       setFullName('');
@@ -55,13 +79,15 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
         linkedin_url: linkedinUrl || null,
         resume_url: resumeUrl || null,
         status,
-        created_by: candidate?.created_by || null,
-        created_at: candidate?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save candidate');
+      console.error(err);
+      setError(
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as any).message)
+          : 'Failed to save candidate'
+      );
     } finally {
       setLoading(false);
     }
@@ -97,8 +123,7 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter candidate name"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             />
           </div>
 
@@ -110,8 +135,7 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="candidate@example.com"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             />
           </div>
 
@@ -123,8 +147,7 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="(555) 123-4567"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             />
           </div>
 
@@ -136,8 +159,7 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
               type="url"
               value={linkedinUrl}
               onChange={(e) => setLinkedinUrl(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="https://linkedin.com/in/candidate"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             />
           </div>
 
@@ -149,8 +171,7 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
               type="url"
               value={resumeUrl}
               onChange={(e) => setResumeUrl(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="https://example.com/resume.pdf"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             />
           </div>
 
@@ -161,7 +182,7 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
             <select
               value={status}
               onChange={(e) => setStatus(e.target.value as CandidateStatus)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             >
               {STATUSES.map((s) => (
                 <option key={s} value={s}>
@@ -175,14 +196,14 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-2 bg-gray-100 rounded-lg"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
             >
               {loading ? 'Saving...' : 'Save'}
             </button>

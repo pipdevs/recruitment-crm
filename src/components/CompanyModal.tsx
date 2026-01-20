@@ -4,14 +4,29 @@ import type { Database } from '../lib/database.types';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 
+/**
+ * ✅ Form data ≠ database row
+ */
+export type CompanyFormData = {
+  name: string;
+  industry: string | null;
+  website: string | null;
+  notes: string | null;
+};
+
 interface CompanyModalProps {
   isOpen: boolean;
   company?: Company;
   onClose: () => void;
-  onSubmit: (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onSubmit: (data: CompanyFormData) => Promise<void>;
 }
 
-export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModalProps) {
+export function CompanyModal({
+  isOpen,
+  company,
+  onClose,
+  onSubmit,
+}: CompanyModalProps) {
   const [name, setName] = useState('');
   const [industry, setIndustry] = useState('');
   const [website, setWebsite] = useState('');
@@ -22,9 +37,9 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
   useEffect(() => {
     if (company) {
       setName(company.name);
-      setIndustry(company.industry || '');
-      setWebsite(company.website || '');
-      setNotes(company.notes || '');
+      setIndustry(company.industry ?? '');
+      setWebsite(company.website ?? '');
+      setNotes(company.notes ?? '');
     } else {
       setName('');
       setIndustry('');
@@ -45,13 +60,15 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
         industry: industry || null,
         website: website || null,
         notes: notes || null,
-        created_by: company?.created_by || null,
-        created_at: company?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save company');
+      console.error(err);
+      setError(
+        err && typeof err === 'object' && 'message' in err
+          ? String((err as any).message)
+          : 'Failed to save company'
+      );
     } finally {
       setLoading(false);
     }
@@ -88,7 +105,6 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
               onChange={(e) => setName(e.target.value)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter company name"
             />
           </div>
 
@@ -100,8 +116,7 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
               type="text"
               value={industry}
               onChange={(e) => setIndustry(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="e.g., Technology, Finance"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             />
           </div>
 
@@ -113,8 +128,7 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
               type="url"
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="https://example.com"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             />
           </div>
 
@@ -125,9 +139,8 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Add notes about this company"
               rows={3}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg"
             />
           </div>
 
@@ -135,14 +148,14 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex-1 px-4 py-2 bg-gray-100 rounded-lg"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
             >
               {loading ? 'Saving...' : 'Save'}
             </button>

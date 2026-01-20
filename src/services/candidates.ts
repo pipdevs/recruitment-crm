@@ -25,41 +25,23 @@ export const candidatesService = {
     return data;
   },
 
-  async create(candidate: Omit<CandidateInsert, 'created_by'>) {
-    // 🔐 Always get authenticated user
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
-
+  async create(candidate: CandidateInsert) {
     const { data, error } = await supabase
       .from('candidates')
-      .insert({
-        ...candidate,
-        created_by: user.id, // ✅ valid FK every time
-      })
+      .insert([candidate])
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
 
   async update(id: string, candidate: CandidateUpdate) {
-    // 🚫 Never allow created_by changes
-    const { created_by, ...safeUpdates } = candidate as any;
-
     const { data, error } = await supabase
       .from('candidates')
-      .update(safeUpdates)
+      .update(candidate)
       .eq('id', id)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
@@ -86,15 +68,14 @@ export const candidatesService = {
   async addNote(candidateId: string, content: string, userId: string) {
     const { data, error } = await supabase
       .from('notes')
-      .insert({
+      .insert([{
         entity_type: 'candidate',
         entity_id: candidateId,
         content,
         created_by: userId,
-      })
+      }])
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },

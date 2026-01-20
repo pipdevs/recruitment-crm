@@ -11,6 +11,7 @@ Do not build full CRUD flows yet.
 Focus only on structure, schema, and auth.
 Write all generated files to the project.
 
+----------
 
 Output 1:
 
@@ -44,6 +45,7 @@ Modular component architecture
 Responsive design with Tailwind CSS
 You can now sign up with any role (Admin, Manager, or Recruiter) and explore the interface. The structure is ready for implementing full CRUD operations for each entity whenever you're ready to build those features.
 
+//
 
 Prompt 2:
 
@@ -52,6 +54,7 @@ Add company pages with notes and activity timelines.
 Add candidate profiles with tags and status.
 Preserve existing auth, schema, and layout.
 
+------------
 
 Output 2:
 
@@ -82,3 +85,5 @@ Delete confirmations to prevent accidental removal
 Responsive design that works across devices
 All operations integrated with Bolt Database and RLS policies
 The entire project builds successfully and preserves all existing authentication, schema, and layout structure. You can now sign up and start managing your companies and candidates!
+
+//

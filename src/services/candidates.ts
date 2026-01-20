@@ -110,4 +110,4 @@ export const candidatesService = {
   async updateStatus(id: string, status: Candidate['status']) {
     return this.update(id, { status });
   },
-};
+}

@@ -45,9 +45,6 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
         industry: industry || null,
         website: website || null,
         notes: notes || null,
-        created_by: company?.created_by || null,
-        created_at: company?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
       onClose();
     } catch (err) {

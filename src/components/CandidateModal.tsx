@@ -191,3 +191,4 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
       </div>
     </div>
   );
+}

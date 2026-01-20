@@ -151,3 +151,4 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
       </div>
     </div>
   );
+}

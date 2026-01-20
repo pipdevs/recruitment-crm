@@ -37,14 +37,18 @@ export function Companies() {
     }
   };
 
-  const handleCreate = async (
-    data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'created_by'>
-  ) => {
-    const newCompany = await companiesService.create(data);
-    setCompanies([newCompany, ...companies]);
-    setModalOpen(false);
+  const handleCreate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
+    try {
+      const newCompany = await companiesService.create({
+        ...data,
+        created_by: user?.id || null,
+      });
+      setCompanies([newCompany, ...companies]);
+      setModalOpen(false);
+    } catch (err) {
+      throw err;
+    }
   };
-
 
   const handleUpdate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     if (!selectedCompany) return;

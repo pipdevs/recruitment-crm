@@ -25,41 +25,23 @@ export const companiesService = {
     return data;
   },
 
-  async create(company: Omit<CompanyInsert, 'created_by'>) {
-    // 🔐 ALWAYS fetch the authenticated user here
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      throw new Error('User not authenticated');
-    }
-
+  async create(company: CompanyInsert) {
     const { data, error } = await supabase
       .from('companies')
-      .insert({
-        ...company,
-        created_by: user.id, // ✅ guaranteed valid FK
-      })
+      .insert([company])
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
 
   async update(id: string, company: CompanyUpdate) {
-    // 🚫 NEVER update created_by
-    const { created_by, ...safeUpdates } = company as any;
-
     const { data, error } = await supabase
       .from('companies')
-      .update(safeUpdates)
+      .update(company)
       .eq('id', id)
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },
@@ -86,15 +68,14 @@ export const companiesService = {
   async addNote(companyId: string, content: string, userId: string) {
     const { data, error } = await supabase
       .from('notes')
-      .insert({
+      .insert([{
         entity_type: 'company',
         entity_id: companyId,
         content,
         created_by: userId,
-      })
+      }])
       .select()
       .single();
-
     if (error) throw error;
     return data;
   },

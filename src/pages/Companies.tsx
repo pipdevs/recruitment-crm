@@ -38,11 +38,16 @@ export function Companies() {
   };
 
   const handleCreate = async (
-    data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'created_by'>
-  ) => {
-    const newCompany = await companiesService.create(data);
-    setCompanies([newCompany, ...companies]);
-    setModalOpen(false);
+    data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
+  if (!user) throw new Error('Not authenticated');
+
+  const newCompany = await companiesService.create({
+    ...data,
+    created_by: user.id,  // <-- explicitly set
+  });
+
+  setCompanies([newCompany, ...companies]);
+  setModalOpen(false);
   };
 
 

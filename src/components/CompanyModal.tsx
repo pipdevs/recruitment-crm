@@ -45,21 +45,19 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
         industry: industry || null,
         website: website || null,
         notes: notes || null,
-        created_by: company?.created_by || null,
-        created_at: company?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
       onClose();
-    } 
-    
-    catch (err) {
-  console.error(err)
+    } catch (err) {
+      console.error(err)
   setError(
-    err && typeof err === 'object' && 'message' in err
+      err && typeof err === 'object' && 'message' in err
       ? String(err.message)
       : JSON.stringify(err)
-  )
-};
+  )          
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 

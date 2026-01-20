@@ -37,27 +37,18 @@ export function Companies() {
     }
   };
 
-  const handleCreate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'created_by'>) => {
+  const handleCreate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     try {
-      // Only include the fields from the form
-      const insertData = {
-        name: data.name,
-        industry: data.industry,
-        website: data.website,
-        notes: data.notes,
-      };
-
-    const newCompany = await companiesService.create(insertData);
-
-    setCompanies([newCompany, ...companies]);
-    setModalOpen(false);
-        } catch (err) {
-      console.error('Failed to create company:', err);
-      throw err; // this will be caught in the modal and displayed
+      const newCompany = await companiesService.create({
+        ...data,
+        created_by: user?.id || null,
+      });
+      setCompanies([newCompany, ...companies]);
+      setModalOpen(false);
+    } catch (err) {
+      throw err;
     }
   };
-
-
 
   const handleUpdate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
     if (!selectedCompany) return;
@@ -120,6 +111,9 @@ export function Companies() {
 
   return (
     <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Companies</h1>
+        <p className="text-gray-600">Manage your company database</p>
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Companies</h1>
@@ -137,6 +131,10 @@ export function Companies() {
         </button>
       </div>
 
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12">
+        <div className="flex flex-col items-center justify-center text-center">
+          <div className="bg-green-100 p-4 rounded-full mb-4">
+            <Building2 className="w-8 h-8 text-green-600" />
       {error && (
         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
           <p className="text-sm text-red-600">{error}</p>
@@ -357,6 +355,13 @@ function CompanyDetail({ company, onBack, onEdit, onDelete }: CompanyDetailProps
               )}
             </div>
           </div>
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">No Companies Yet</h3>
+          <p className="text-gray-600 mb-6 max-w-md">
+            Add companies to track your clients and prospects.
+          </p>
+          <button className="px-6 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors">
+            Add Company
+          </button>
         </div>
 
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-fit">
@@ -410,6 +415,3 @@ function CompanyDetail({ company, onBack, onEdit, onDelete }: CompanyDetailProps
           )}
         </div>
       </div>
-    </div>
-  );
-}

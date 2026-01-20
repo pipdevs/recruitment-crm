@@ -3,7 +3,7 @@ import type { Database } from '../lib/database.types';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
 type CandidateInsert = Database['public']['Tables']['candidates']['Insert'];
-type CandidateUpdate = Database['public']['Tables']['candidates']['Update';
+type CandidateUpdate = Database['public']['Tables']['candidates']['Update'];
 
 export const candidatesService = {
   async getAll() {

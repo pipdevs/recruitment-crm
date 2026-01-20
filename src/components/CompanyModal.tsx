@@ -48,7 +48,12 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
       });
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save company');
+      console.error(err)
+  setError(
+      err && typeof err === 'object' && 'message' in err
+      ? String(err.message)
+      : JSON.stringify(err)
+  )          
     } finally {
       setLoading(false);
     }

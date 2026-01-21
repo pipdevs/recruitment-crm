@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Users, Edit2, Trash2, Plus, Mail, Phone, Linkedin } from 'lucide-react';
+import { Users, Edit2, Trash2, Plus, Mail, Phone, Linkedin, List, Columns } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { CandidateModal } from '../components/CandidateModal';
+import { PipelineView } from '../components/PipelineView';
 import { candidatesService } from '../services/candidates';
 import type { Database } from '../lib/database.types';
 
@@ -24,6 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
 export function Candidates() {
   const { user } = useAuth();
   const [state, setState] = useState<CandidatesPageState>({ view: 'list' });
+  const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('list');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | undefined>();
   const [loading, setLoading] = useState(true);
@@ -134,16 +136,42 @@ export function Candidates() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Candidates</h1>
           <p className="text-gray-600">Manage your candidate pipeline</p>
         </div>
-        <button
-          onClick={() => {
-            setSelectedCandidate(undefined);
-            setModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Candidate
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <List className="w-4 h-4" />
+              List
+            </button>
+            <button
+              onClick={() => setViewMode('pipeline')}
+              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
+                viewMode === 'pipeline'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <Columns className="w-4 h-4" />
+              Pipeline
+            </button>
+          </div>
+          <button
+            onClick={() => {
+              setSelectedCandidate(undefined);
+              setModalOpen(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Add Candidate
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -164,6 +192,13 @@ export function Candidates() {
             </p>
           </div>
         </div>
+      ) : viewMode === 'pipeline' ? (
+        <PipelineView
+          candidates={candidates}
+          onCandidateClick={openCandidateDetail}
+          onEdit={handleEditClick}
+          onDelete={handleDelete}
+        />
       ) : (
         <div className="grid gap-4">
           {candidates.map((candidate) => (

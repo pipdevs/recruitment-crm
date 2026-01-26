@@ -26,6 +26,7 @@ export const companiesService = {
   },
 
   async create(company: CompanyInsert) {
+    const { created_by, ...payload } = company;
     const { data, error } = await supabase
       .from('companies')
       .insert([company])

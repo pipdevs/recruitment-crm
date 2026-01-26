@@ -37,6 +37,7 @@ export const candidatesService = {
   },
 
   async update(id: string, candidate: CandidateUpdate) {
+    const { created_by, ...payload } = candidate;
     const { data, error } = await supabase
       .from('candidates')
       .update(candidate)

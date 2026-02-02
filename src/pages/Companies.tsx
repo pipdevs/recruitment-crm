@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { Building2, Edit2, Trash2, Plus, Link as LinkIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { CompanyModal } from '../components/CompanyModal';
+import { ActivityFeed } from '../components/ActivityFeed';
 import { companiesService } from '../services/companies';
+import { activitiesService } from '../services/activities';
 import type { Database } from '../lib/database.types';
 
 type Company = Database['public']['Tables']['companies']['Row'];
@@ -252,6 +254,7 @@ function CompanyDetail({ company, onBack, onEdit, onDelete }: CompanyDetailProps
     setAddingNote(true);
     try {
       await companiesService.addNote(company.id, newNote, user.id);
+      await activitiesService.createNote('company', company.id, newNote, user.id);
       setNewNote('');
       await loadNotes();
     } catch (err) {
@@ -325,28 +328,7 @@ function CompanyDetail({ company, onBack, onEdit, onDelete }: CompanyDetailProps
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Activity Timeline</h2>
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <p className="font-medium text-gray-900">Company created</p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(company.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              {company.updated_at !== company.created_at && (
-                <div className="flex gap-4">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <div>
-                    <p className="font-medium text-gray-900">Last updated</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(company.updated_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <ActivityFeed entityType="company" entityId={company.id} />
           </div>
         </div>
 

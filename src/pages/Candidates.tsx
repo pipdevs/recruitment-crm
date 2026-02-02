@@ -3,7 +3,9 @@ import { Users, Edit2, Trash2, Plus, Mail, Phone, Linkedin, List, Columns } from
 import { useAuth } from '../contexts/AuthContext';
 import { CandidateModal } from '../components/CandidateModal';
 import { PipelineView } from '../components/PipelineView';
+import { ActivityFeed } from '../components/ActivityFeed';
 import { candidatesService } from '../services/candidates';
+import { activitiesService } from '../services/activities';
 import type { Database } from '../lib/database.types';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
@@ -330,6 +332,7 @@ function CandidateDetail({ candidate, onBack, onEdit, onDelete, onStatusChange }
     setAddingNote(true);
     try {
       await candidatesService.addNote(candidate.id, newNote, user.id);
+      await activitiesService.createNote('candidate', candidate.id, newNote, user.id);
       setNewNote('');
       await loadNotes();
     } catch (err) {
@@ -351,6 +354,15 @@ function CandidateDetail({ candidate, onBack, onEdit, onDelete, onStatusChange }
   const handleStatusChange = async (newStatus: typeof STATUSES[number]) => {
     setStatusUpdating(true);
     try {
+      if (user) {
+        await activitiesService.createStageMove(
+          'candidate',
+          candidate.id,
+          candidate.status,
+          newStatus,
+          user.id
+        );
+      }
       await onStatusChange(newStatus as any);
     } finally {
       setStatusUpdating(false);
@@ -462,28 +474,7 @@ function CandidateDetail({ candidate, onBack, onEdit, onDelete, onStatusChange }
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Activity Timeline</h2>
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <p className="font-medium text-gray-900">Candidate added</p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(candidate.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              {candidate.updated_at !== candidate.created_at && (
-                <div className="flex gap-4">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <div>
-                    <p className="font-medium text-gray-900">Last updated</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(candidate.updated_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <ActivityFeed entityType="candidate" entityId={candidate.id} />
           </div>
         </div>
 

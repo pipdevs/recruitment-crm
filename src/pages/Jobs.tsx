@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { Briefcase, Edit2, Trash2, Plus, MapPin, DollarSign, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { JobModal } from '../components/JobModal';
+import { ActivityFeed } from '../components/ActivityFeed';
 import { jobsService } from '../services/jobs';
+import { activitiesService } from '../services/activities';
 import type { Database } from '../lib/database.types';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
@@ -281,6 +283,7 @@ function JobDetail({ job, onBack, onEdit, onDelete, onStatusChange }: JobDetailP
     setAddingNote(true);
     try {
       await jobsService.addNote(job.id, newNote, user.id);
+      await activitiesService.createNote('job', job.id, newNote, user.id);
       setNewNote('');
       await loadNotes();
     } catch (err) {
@@ -302,6 +305,15 @@ function JobDetail({ job, onBack, onEdit, onDelete, onStatusChange }: JobDetailP
   const handleStatusChange = async (newStatus: typeof STATUSES[number]) => {
     setStatusUpdating(true);
     try {
+      if (user) {
+        await activitiesService.createStatusChange(
+          'job',
+          job.id,
+          job.status,
+          newStatus,
+          user.id
+        );
+      }
       await onStatusChange(newStatus as any);
     } finally {
       setStatusUpdating(false);
@@ -389,28 +401,7 @@ function JobDetail({ job, onBack, onEdit, onDelete, onStatusChange }: JobDetailP
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <h2 className="text-xl font-bold text-gray-900 mb-4">Activity Timeline</h2>
-            <div className="space-y-4">
-              <div className="flex gap-4">
-                <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-                <div>
-                  <p className="font-medium text-gray-900">Job created</p>
-                  <p className="text-sm text-gray-500">
-                    {new Date(job.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
-              {job.updated_at !== job.created_at && (
-                <div className="flex gap-4">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <div>
-                    <p className="font-medium text-gray-900">Last updated</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(job.updated_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
+            <ActivityFeed entityType="job" entityId={job.id} />
           </div>
         </div>
 

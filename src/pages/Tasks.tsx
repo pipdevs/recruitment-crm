@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { TaskModal } from '../components/TaskModal';
 import { Calendar } from '../components/Calendar';
 import { tasksService } from '../services/tasks';
+import { activitiesService } from '../services/activities';
 import type { Database } from '../lib/database.types';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
@@ -54,9 +55,23 @@ export function Tasks() {
   };
 
   const handleUpdate = async (data: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!selectedTask) return;
+    if (!selectedTask || !user) return;
     try {
       const updated = await tasksService.update(selectedTask.id, data);
+
+      if (selectedTask.status !== updated.status) {
+        if (updated.status === 'Completed') {
+          if (updated.related_entity_type && updated.related_entity_id) {
+            await activitiesService.createTaskCompletion(
+              updated.related_entity_type as any,
+              updated.related_entity_id,
+              updated.title,
+              user.id
+            );
+          }
+        }
+      }
+
       setTasks(tasks.map(t => t.id === updated.id ? updated : t));
       setSelectedTask(updated);
       setModalOpen(false);

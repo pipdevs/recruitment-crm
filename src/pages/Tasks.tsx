@@ -108,10 +108,10 @@ export function Tasks() {
     ? tasks
     : tasks.filter(t => t.status === filterStatus);
 
-  const isOverdue = (dueDate: string | null) => {
-    if (!dueDate) return false;
-    return new Date(dueDate) < new Date() && selectedTask?.status !== 'Completed';
-  };
+  const isOverdue = (task: { due_date: string | null; status: string | null }) => {
+  if (!task.due_date) return false;
+  return new Date(task.due_date) < new Date() && task.status !== 'Completed';
+};
 
   if (loading) {
     return (
@@ -253,7 +253,7 @@ export function Tasks() {
                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[task.status]}`}>
                           {task.status}
                         </span>
-                        {isOverdue(task.due_date) && (
+                        {isOverdue(task) && (
                           <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                             Overdue
                           </span>

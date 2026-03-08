@@ -99,7 +99,7 @@ export function Tasks() {
     handleEditClick(task);
   };
 
-  const handleDateClick = (date: Date) => {
+  const handleDateClick = (_date: Date) => {
     setSelectedTask(undefined);
     setModalOpen(true);
   };

@@ -34,7 +34,7 @@ export function PipelineView({ candidates, onCandidateClick, onEdit, onDelete }:
         return (
           <div
             key={status}
-            className={`flex-shrink-0 w-80 rounded-xl border-2 ${STATUS_COLORS[status]} p-4`}
+            className={`flex-shrink-0 w-80 rounded-xl border-2 ${status ? STATUS_COLORS[status] : ''} p-4`}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-bold text-gray-900">{status}</h3>

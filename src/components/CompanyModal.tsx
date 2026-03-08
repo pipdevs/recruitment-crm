@@ -45,7 +45,10 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
         industry: industry || null,
         website: website || null,
         notes: notes || null,
+        created_by: '',
+        assigned_to: null,
       });
+
       onClose();
     } catch (err) {
       console.error(err)

@@ -1,7 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
-type Company = Database['public']['Tables']['companies']['Row'];
 type CompanyInsert = Database['public']['Tables']['companies']['Insert'];
 type CompanyUpdate = Database['public']['Tables']['companies']['Update'];
 
@@ -26,7 +25,6 @@ export const companiesService = {
   },
 
   async create(company: CompanyInsert) {
-    const { created_by, ...payload } = company;
     const { data, error } = await supabase
       .from('companies')
       .insert([company])

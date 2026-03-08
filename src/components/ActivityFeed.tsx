@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { MessageSquare, CheckCircle2, ArrowRight, FileText, Loader2 } from 'lucide-react';
 import { activitiesService, type EntityType } from '../services/activities';
+import type { Json } from '../lib/database.types';
 
 interface Activity {
   id: string;
   activity_type: string;
   message: string;
-  metadata?: Record<string, unknown>;
-  author?: { id: string; full_name: string };
-  created_at: string;
+  metadata?: Json | null;
+  author?: { id: string; full_name: string } | null;
+  created_at: string | null;
 }
 
 interface ActivityFeedProps {
@@ -33,7 +34,7 @@ const ACTIVITY_COLORS: Record<string, string> = {
   task_updated: 'text-gray-600 bg-gray-50',
 };
 
-export function ActivityFeed({ entityType, entityId, onNoteAdded }: ActivityFeedProps) {
+export function ActivityFeed({ entityType, entityId }: ActivityFeedProps) {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -76,10 +77,6 @@ export function ActivityFeed({ entityType, entityId, onNoteAdded }: ActivityFeed
     if (diffDays < 7) return `${diffDays}d ago`;
 
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined });
-  };
-
-  const getActivityLabel = (type: string) => {
-    return type.replace(/_/g, ' ').split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   };
 
   if (loading && activities.length === 0) {
@@ -132,45 +129,52 @@ export function ActivityFeed({ entityType, entityId, onNoteAdded }: ActivityFeed
                   </p>
                 </div>
                 <p className="text-xs text-gray-500 flex-shrink-0 whitespace-nowrap">
-                  {formatDate(activity.created_at)}
+                  {formatDate(activity.created_at ?? '')}
                 </p>
               </div>
 
-              {activity.activity_type === 'note_added' && activity.metadata?.note_content && (
+          {(() => {
+            const meta = activity.metadata as Record<string, unknown> | null;
+            if (!meta) return null;
+            if (activity.activity_type === 'note_added' && meta.note_content != null) {
+              return (
                 <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-sm text-gray-700">
-                    {String(activity.metadata.note_content)}
-                  </p>
+                  <p className="text-sm text-gray-700">{String(meta.note_content)}</p>
                 </div>
-              )}
-
-              {activity.activity_type === 'status_changed' && activity.metadata && (
+              );
+            }
+            if (activity.activity_type === 'status_changed') {
+              return (
                 <div className="mt-2 text-xs text-gray-600">
                   <span className="inline-block px-2 py-1 bg-red-100 text-red-800 rounded mr-2">
-                    {String(activity.metadata.old_status)}
+                    {String(meta.old_status)}
                   </span>
                   <span className="inline-block">→</span>
                   <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded ml-2">
-                    {String(activity.metadata.new_status)}
+                    {String(meta.new_status)}
                   </span>
                 </div>
-              )}
-
-              {activity.activity_type === 'stage_moved' && activity.metadata && (
+              );
+            }
+            if (activity.activity_type === 'stage_moved') {
+              return (
                 <div className="mt-2 text-xs text-gray-600">
                   <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 rounded mr-2">
-                    {String(activity.metadata.old_stage)}
+                    {String(meta.old_stage)}
                   </span>
                   <span className="inline-block">→</span>
                   <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded ml-2">
-                    {String(activity.metadata.new_stage)}
+                    {String(meta.new_stage)}
                   </span>
                 </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+              );
+            }
+            return null;
+          })()}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          }

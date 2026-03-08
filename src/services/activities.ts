@@ -1,8 +1,5 @@
+import type { Json } from '../lib/database.types';
 import { supabase } from '../lib/supabase';
-import type { Database } from '../lib/database.types';
-
-type Activity = Database['public']['Tables']['activities']['Row'];
-type ActivityInsert = Database['public']['Tables']['activities']['Insert'];
 
 export type EntityType = 'candidate' | 'company' | 'job' | 'task';
 export type ActivityType = 'note_added' | 'status_changed' | 'stage_moved' | 'task_completed' | 'task_updated';
@@ -37,7 +34,7 @@ export const activitiesService = {
         entity_id: entityId,
         activity_type: activityType,
         message,
-        metadata: metadata || null,
+        metadata: (metadata || null) as Json | null,
         author: authorId,
       }])
       .select(`

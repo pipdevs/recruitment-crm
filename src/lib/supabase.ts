@@ -9,3 +9,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export type UserRole = 'Admin' | 'Manager' | 'Recruiter';
+export type CandidateStatus = 'New' | 'Screening' | 'Interview' | 'Offer' | 'Hired' | 'Rejected';
+export type JobStatus = 'Open' | 'Closed' | 'On Hold';
+export type TaskStatus = 'Pending' | 'In Progress' | 'Completed';
+export type EntityType = 'candidate' | 'company' | 'job';

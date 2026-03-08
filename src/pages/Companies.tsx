@@ -43,7 +43,7 @@ export function Companies() {
     try {
       const newCompany = await companiesService.create({
         ...data,
-        created_by: user?.id || null,
+        created_by: user?.id || undefined,
       });
       setCompanies([newCompany, ...companies]);
       setModalOpen(false);

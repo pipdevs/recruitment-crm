@@ -215,7 +215,7 @@ export function Candidates() {
                     <h3 className="text-lg font-semibold text-gray-900">
                       {candidate.full_name}
                     </h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[candidate.status]}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${candidate.status ? STATUS_COLORS[candidate.status] : ''}`}>
                       {candidate.status}
                     </span>
                   </div>
@@ -358,7 +358,7 @@ function CandidateDetail({ candidate, onBack, onEdit, onDelete, onStatusChange }
         await activitiesService.createStageMove(
           'candidate',
           candidate.id,
-          candidate.status,
+          candidate.status ?? 'New',
           newStatus,
           user.id
         );
@@ -404,10 +404,10 @@ function CandidateDetail({ candidate, onBack, onEdit, onDelete, onStatusChange }
                 Pipeline Status
               </label>
               <select
-                value={candidate.status}
+                value={candidate.status ?? 'New'}
                 onChange={(e) => handleStatusChange(e.target.value as any)}
                 disabled={statusUpdating}
-                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${STATUS_COLORS[candidate.status]} font-medium`}
+                className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${candidate.status ? STATUS_COLORS[candidate.status] : ''} font-medium`}
               >
                 {STATUSES.map((s) => (
                   <option key={s} value={s}>

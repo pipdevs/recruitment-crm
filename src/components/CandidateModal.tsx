@@ -30,7 +30,7 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
       setPhone(candidate.phone || '');
       setLinkedinUrl(candidate.linkedin_url || '');
       setResumeUrl(candidate.resume_url || '');
-      setStatus(candidate.status);
+      setStatus((candidate.status as CandidateStatus) ?? 'New');
     } else {
       setFullName('');
       setEmail('');
@@ -43,29 +43,29 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
   }, [candidate, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
+  e.preventDefault();
+  setError('');
+  setLoading(true);
 
-    try {
-      await onSubmit({
-        full_name: fullName,
-        email: email || null,
-        phone: phone || null,
-        linkedin_url: linkedinUrl || null,
-        resume_url: resumeUrl || null,
-        status,
-        created_by: candidate?.created_by || null,
-        created_at: candidate?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save candidate');
-    } finally {
-      setLoading(false);
-    }
-  };
+  try {
+    await onSubmit({
+      full_name: fullName,
+      email: email || null,
+      phone: phone || null,
+      linkedin_url: linkedinUrl || null,
+      resume_url: resumeUrl || null,
+      status,
+      created_by: candidate?.created_by || null,
+      assigned_to: candidate?.assigned_to || null,
+    });
+    onClose();
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to save candidate');
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   if (!isOpen) return null;
 

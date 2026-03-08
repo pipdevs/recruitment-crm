@@ -50,9 +50,9 @@ export function TaskModal({ isOpen, task, onClose, onSubmit }: TaskModalProps) {
       setTitle(task.title);
       setDescription(task.description || '');
       setDueDate(task.due_date ? new Date(task.due_date).toISOString().slice(0, 16) : '');
-      setStatus(task.status);
+      setStatus((task.status as TaskStatus) ?? 'Pending');
       setAssignedTo(task.assigned_to || '');
-      setRelatedEntityType(task.related_entity_type || '');
+      setRelatedEntityType((task.related_entity_type as EntityType) || '');
       setRelatedEntityId(task.related_entity_id || '');
     } else {
       setTitle('');
@@ -124,8 +124,6 @@ export function TaskModal({ isOpen, task, onClose, onSubmit }: TaskModalProps) {
         related_entity_type: (relatedEntityType as EntityType) || null,
         related_entity_id: relatedEntityId || null,
         created_by: task?.created_by || null,
-        created_at: task?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
       });
       onClose();
     } catch (err) {

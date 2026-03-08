@@ -36,7 +36,7 @@ export function JobModal({ isOpen, job, onClose, onSubmit }: JobModalProps) {
       setTitle(job.title);
       setCompanyId(job.company_id || '');
       setDescription(job.description || '');
-      setStatus(job.status);
+      setStatus((job.status as JobStatus) ?? 'Open');
       setLocation(job.location || '');
       setSalaryRange(job.salary_range || '');
     } else {
@@ -73,9 +73,9 @@ export function JobModal({ isOpen, job, onClose, onSubmit }: JobModalProps) {
         location: location || null,
         salary_range: salaryRange || null,
         created_by: job?.created_by || null,
-        created_at: job?.created_at || new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        assigned_to: job?.assigned_to || null,
       });
+
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save job');

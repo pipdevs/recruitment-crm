@@ -82,11 +82,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const { error: profileError } = await supabase
       .from('profiles')
-      .insert({
+      .insert([{
         id: data.user.id,
         full_name: fullName,
         role: role,
-      });
+      }]);
+
 
     if (profileError) throw profileError;
   };

@@ -55,7 +55,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
 
       if (error) throw error;
-      setProfile(data);
+
+      // Profile exists, set it
+      if (data) {
+        setProfile(data);
+        return;
+      }
+
+      // No profile row found — create a default one so the app doesn't break
+      const { data: newProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: userId,
+          full_name: 'New User',
+          role: 'Recruiter',
+        }])
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('Failed to create profile:', insertError);
+      } else {
+        setProfile(newProfile);
+      }
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -64,22 +86,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
   };
 
-  const signUp = async (email: string, password: string, fullName: string, role: Profile['role']) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
-
+  const signUp = async (
+    email: string,
+    password: string,
+    fullName: string,
+    role: Profile['role']
+  ) => {
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
     if (!data.user) throw new Error('User creation failed');
 
+    // Insert profile — if email confirmation is on, this still runs
+    // and loadProfile's fallback will handle any edge cases on first login
     const { error: profileError } = await supabase
       .from('profiles')
       .insert([{
@@ -88,8 +110,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: role,
       }]);
 
-
-    if (profileError) throw profileError;
+    // Don't throw on profile error if it's a duplicate — user may already exist
+    if (profileError && profileError.code !== '23505') {
+      throw profileError;
+    }
   };
 
   const signOut = async () => {
@@ -97,16 +121,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) throw error;
   };
 
-  const value = {
-    user,
-    profile,
-    loading,
-    signIn,
-    signUp,
-    signOut,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

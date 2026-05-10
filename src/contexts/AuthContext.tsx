@@ -68,7 +68,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // No profile found — this shouldn't happen post-signup but handle gracefully
       console.warn('No profile found for user:', userId);
     } catch (error) {
       console.error('Error loading profile:', error);
@@ -76,6 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }
   };
+
 
   const loadOrganisation = async (orgId: string) => {
     try {

@@ -12,11 +12,11 @@ import { Notes } from './pages/Notes';
 import { Contacts } from './pages/Contacts';
 import { JobApplications } from './pages/JobApplications';
 import { Placements } from './pages/Placements';
-import { useState } from 'react';
 import { Team } from './pages/Team';
 import { AcceptInvite } from './pages/AcceptInvite';
+import { useState } from 'react';
 
-export default function App() {
+function ProtectedApp() {
   const { user, loading } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
@@ -40,28 +40,30 @@ export default function App() {
   }
 
   return (
-    <>
+    <Layout>
       <Routes>
-        <Route path="/invite/:token" element={<AcceptInvite />} />
-        <Route path="*" element={
-          <Layout>
-            <Routes>
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/candidates" element={<Candidates />} />
-              <Route path="/companies" element={<Companies />} />
-              <Route path="/jobs" element={<Jobs />} />
-              <Route path="/applications" element={<JobApplications />} />
-              <Route path="/placements" element={<Placements />} />
-              <Route path="/tasks" element={<Tasks />} />
-              <Route path="/notes" element={<Notes />} />
-              <Route path="/contacts" element={<Contacts />} />
-              <Route path="/team" element={<Team />} />
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Layout>
-        } />
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/candidates" element={<Candidates />} />
+        <Route path="/companies" element={<Companies />} />
+        <Route path="/jobs" element={<Jobs />} />
+        <Route path="/applications" element={<JobApplications />} />
+        <Route path="/placements" element={<Placements />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/notes" element={<Notes />} />
+        <Route path="/contacts" element={<Contacts />} />
+        <Route path="/team" element={<Team />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-    </>
+    </Layout>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/invite/:token" element={<AcceptInvite />} />
+      <Route path="*" element={<ProtectedApp />} />
+    </Routes>
   );
 }

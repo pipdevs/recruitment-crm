@@ -18,8 +18,10 @@ export function AcceptInvite() {
   }, [token]);
 
   const loadInvite = async (token: string) => {
+    console.log('Loading invite for token:', token);
     try {
       const data = await teamService.getInviteByToken(token);
+          console.log('Invite data:', data);
       if (!data) throw new Error('Invite not found or already used');
       if (data.expires_at && new Date(data.expires_at) < new Date()) {
         throw new Error('This invite has expired');
@@ -39,7 +41,7 @@ export function AcceptInvite() {
     setError('');
 
     try {
-      // Create auth user
+      // 1. Create auth user
       const { data, error: signUpError } = await supabase.auth.signUp({
         email: invite.email,
         password,
@@ -47,21 +49,30 @@ export function AcceptInvite() {
       if (signUpError) throw signUpError;
       if (!data.user) throw new Error('Failed to create account');
 
-      // Create profile linked to the organisation
+      // 2. Create profile linked to the organisation BEFORE auth state fires
       const { error: profileError } = await supabase
         .from('profiles')
-        .insert([{
+        .upsert([{
           id: data.user.id,
           full_name: fullName,
           role: invite.role,
           organisation_id: invite.organisation_id,
         }]);
-      if (profileError && profileError.code !== '23505') throw profileError;
+      if (profileError) throw profileError;
 
-      // Mark invite as accepted
-      await teamService.acceptInvite(token, data.user.id, invite.organisation_id);
+      // 3. Mark invite as accepted
+      await supabase
+        .from('invites')
+        .update({ accepted: true })
+        .eq('token', token);
 
-      // Redirect to app
+      // 4. Sign in immediately so auth state has the right user
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: invite.email,
+        password,
+      });
+      if (signInError) throw signInError;
+
       navigate('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to accept invite');

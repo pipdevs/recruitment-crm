@@ -47,6 +47,7 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
         notes: notes || null,
         created_by: '',
         assigned_to: null,
+        organisation_id: null,
       });
 
       onClose();

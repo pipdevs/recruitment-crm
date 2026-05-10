@@ -4,6 +4,13 @@ import type { Database } from '../lib/database.types';
 type PlacementInsert = Database['public']['Tables']['placements']['Insert'];
 type PlacementUpdate = Database['public']['Tables']['placements']['Update'];
 
+const getOrgId = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data } = await supabase.from('profiles').select('organisation_id').eq('id', user.id).single();
+  return data?.organisation_id;
+};
+
 export const placementsService = {
   async getAll() {
     const { data, error } = await supabase
@@ -20,9 +27,10 @@ export const placementsService = {
   },
 
   async create(placement: PlacementInsert) {
+    const organisation_id = await getOrgId();
     const { data, error } = await supabase
       .from('placements')
-      .insert([placement])
+      .insert([{ ...placement, organisation_id }])
       .select()
       .single();
     if (error) throw error;

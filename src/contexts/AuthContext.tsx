@@ -4,13 +4,15 @@ import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
+type Organisation = Database['public']['Tables']['organisations']['Row'];
 
 interface AuthContextType {
   user: User | null;
   profile: Profile | null;
+  organisation: Organisation | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string, role: Profile['role']) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, role: Profile['role'], orgName: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -19,6 +21,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [organisation, setOrganisation] = useState<Organisation | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -38,6 +41,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           loadProfile(session.user.id);
         } else {
           setProfile(null);
+          setOrganisation(null);
           setLoading(false);
         }
       })();
@@ -56,32 +60,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (error) throw error;
 
-      // Profile exists, set it
       if (data) {
         setProfile(data);
+        if (data.organisation_id) {
+          await loadOrganisation(data.organisation_id);
+        }
         return;
       }
 
-      // No profile row found — create a default one so the app doesn't break
-      const { data: newProfile, error: insertError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: userId,
-          full_name: 'New User',
-          role: 'Recruiter',
-        }])
-        .select()
-        .single();
-
-      if (insertError) {
-        console.error('Failed to create profile:', insertError);
-      } else {
-        setProfile(newProfile);
-      }
+      // No profile found — this shouldn't happen post-signup but handle gracefully
+      console.warn('No profile found for user:', userId);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOrganisation = async (orgId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('organisations')
+        .select('*')
+        .eq('id', orgId)
+        .single();
+      if (error) throw error;
+      setOrganisation(data);
+    } catch (error) {
+      console.error('Error loading organisation:', error);
     }
   };
 
@@ -94,23 +100,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string,
     password: string,
     fullName: string,
-    role: Profile['role']
+    role: Profile['role'],
+    orgName: string,
   ) => {
+    // 1. Create auth user
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
     if (!data.user) throw new Error('User creation failed');
 
-    // Insert profile — if email confirmation is on, this still runs
-    // and loadProfile's fallback will handle any edge cases on first login
+    // 2. Create organisation
+    const { data: org, error: orgError } = await supabase
+      .from('organisations')
+      .insert([{ name: orgName, plan: 'free' }])
+      .select()
+      .single();
+    if (orgError) throw orgError;
+
+    // 3. Create profile linked to organisation
     const { error: profileError } = await supabase
       .from('profiles')
       .insert([{
         id: data.user.id,
         full_name: fullName,
         role: role,
+        organisation_id: org.id,
       }]);
 
-    // Don't throw on profile error if it's a duplicate — user may already exist
     if (profileError && profileError.code !== '23505') {
       throw profileError;
     }
@@ -122,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, profile, organisation, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );

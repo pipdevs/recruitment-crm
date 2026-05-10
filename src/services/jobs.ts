@@ -1,35 +1,32 @@
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
-type Job = Database['public']['Tables']['jobs']['Row'];
 type JobInsert = Database['public']['Tables']['jobs']['Insert'];
 type JobUpdate = Database['public']['Tables']['jobs']['Update'];
+
+const getOrgId = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data } = await supabase.from('profiles').select('organisation_id').eq('id', user.id).single();
+  return data?.organisation_id;
+};
 
 export const jobsService = {
   async getAll() {
     const { data, error } = await supabase
       .from('jobs')
-      .select('*, company:companies(id, name), creator:created_by(full_name)')
+      .select('*, company:company_id(id, name)')
       .order('created_at', { ascending: false });
     if (error) throw error;
     return data;
   },
 
-  async getById(id: string) {
-    const { data, error } = await supabase
-      .from('jobs')
-      .select('*, company:companies(id, name), creator:created_by(full_name)')
-      .eq('id', id)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
-  },
-
   async create(job: JobInsert) {
+    const organisation_id = await getOrgId();
     const { data, error } = await supabase
       .from('jobs')
-      .insert([job])
-      .select('*, company:companies(id, name), creator:created_by(full_name)')
+      .insert([{ ...job, organisation_id }])
+      .select()
       .single();
     if (error) throw error;
     return data;
@@ -40,7 +37,7 @@ export const jobsService = {
       .from('jobs')
       .update(job)
       .eq('id', id)
-      .select('*, company:companies(id, name), creator:created_by(full_name)')
+      .select()
       .single();
     if (error) throw error;
     return data;
@@ -54,33 +51,29 @@ export const jobsService = {
     if (error) throw error;
   },
 
-  async getNotes(jobId: string) {
+  async updateStatus(id: string, status: string) {
     const { data, error } = await supabase
-      .from('notes')
-      .select('*, creator:created_by(full_name)')
-      .eq('entity_type', 'job')
-      .eq('entity_id', jobId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
-  },
-
-  async addNote(jobId: string, content: string, userId: string) {
-    const { data, error } = await supabase
-      .from('notes')
-      .insert([{
-        entity_type: 'job',
-        entity_id: jobId,
-        content,
-        created_by: userId,
-      }])
+      .from('jobs')
+      .update({ status })
+      .eq('id', id)
       .select()
       .single();
     if (error) throw error;
     return data;
   },
 
-  async deleteNote(noteId: string) {
+async getNotes(entityId: string) {
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*, creator:created_by(full_name)')
+      .eq('entity_id', entityId)
+      .eq('entity_type', 'job')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+async deleteNote(noteId: string) {
     const { error } = await supabase
       .from('notes')
       .delete()
@@ -88,7 +81,17 @@ export const jobsService = {
     if (error) throw error;
   },
 
-  async updateStatus(id: string, status: Job['status']) {
-    return this.update(id, { status });
+  async addNote(entityId: string, content: string, createdBy: string) {
+    const organisation_id = await getOrgId();
+    const { error } = await supabase
+      .from('notes')
+      .insert([{
+        entity_type: 'job',
+        entity_id: entityId,
+        content,
+        created_by: createdBy,
+        organisation_id,
+      }]);
+    if (error) throw error;
   },
 };

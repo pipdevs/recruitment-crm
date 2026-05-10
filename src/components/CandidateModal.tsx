@@ -57,6 +57,7 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
       status,
       created_by: candidate?.created_by || null,
       assigned_to: candidate?.assigned_to || null,
+      organisation_id: null,
     });
     onClose();
   } catch (err) {

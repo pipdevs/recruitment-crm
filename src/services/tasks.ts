@@ -1,50 +1,32 @@
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
-type Task = Database['public']['Tables']['tasks']['Row'];
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
 type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
+
+const getOrgId = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data } = await supabase.from('profiles').select('organisation_id').eq('id', user.id).single();
+  return data?.organisation_id;
+};
 
 export const tasksService = {
   async getAll() {
     const { data, error } = await supabase
       .from('tasks')
-      .select(`
-        *,
-        assignee:assigned_to(id, full_name),
-        creator:created_by(full_name),
-        related_candidate:candidates!tasks_related_entity_id_fkey(id, full_name),
-        related_company:companies!tasks_related_entity_id_fkey(id, name),
-        related_job:jobs!tasks_related_entity_id_fkey(id, title)
-      `)
+      .select('*')
       .order('due_date', { ascending: true, nullsFirst: false });
     if (error) throw error;
     return data;
   },
 
-  async getById(id: string) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        assignee:assigned_to(id, full_name),
-        creator:created_by(full_name)
-      `)
-      .eq('id', id)
-      .maybeSingle();
-    if (error) throw error;
-    return data;
-  },
-
   async create(task: TaskInsert) {
+    const organisation_id = await getOrgId();
     const { data, error } = await supabase
       .from('tasks')
-      .insert([task])
-      .select(`
-        *,
-        assignee:assigned_to(id, full_name),
-        creator:created_by(full_name)
-      `)
+      .insert([{ ...task, organisation_id }])
+      .select()
       .single();
     if (error) throw error;
     return data;
@@ -55,11 +37,7 @@ export const tasksService = {
       .from('tasks')
       .update(task)
       .eq('id', id)
-      .select(`
-        *,
-        assignee:assigned_to(id, full_name),
-        creator:created_by(full_name)
-      `)
+      .select()
       .single();
     if (error) throw error;
     return data;
@@ -72,25 +50,6 @@ export const tasksService = {
       .eq('id', id);
     if (error) throw error;
   },
-
-  async updateStatus(id: string, status: Task['status']) {
-    return this.update(id, { status });
-  },
-
-  async getTasksByDate(startDate: Date, endDate: Date) {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select(`
-        *,
-        assignee:assigned_to(id, full_name),
-        creator:created_by(full_name)
-      `)
-      .gte('due_date', startDate.toISOString())
-      .lte('due_date', endDate.toISOString())
-      .order('due_date', { ascending: true });
-    if (error) throw error;
-    return data;
-  },
 };
 
 export const profilesService = {
@@ -98,7 +57,7 @@ export const profilesService = {
     const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, role')
-      .order('full_name', { ascending: true });
+      .order('full_name');
     if (error) throw error;
     return data;
   },

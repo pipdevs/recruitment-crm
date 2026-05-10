@@ -124,6 +124,7 @@ export function TaskModal({ isOpen, task, onClose, onSubmit }: TaskModalProps) {
         related_entity_type: (relatedEntityType as EntityType) || null,
         related_entity_id: relatedEntityId || null,
         created_by: task?.created_by || null,
+        organisation_id: null,
       });
       onClose();
     } catch (err) {

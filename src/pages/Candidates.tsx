@@ -50,29 +50,21 @@ export function Candidates() {
     }
   };
 
-  const handleCreate = async (data: Omit<Candidate, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const newCandidate = await candidatesService.create({
-        ...data,
-        created_by: user?.id || null,
-      });
-      setCandidates([newCandidate, ...candidates]);
-      setModalOpen(false);
-    } catch (err) {
-      throw err;
-    }
+const handleCreate = async (data: Omit<Candidate, 'id' | 'created_at' | 'updated_at'>) => {
+    const newCandidate = await candidatesService.create({
+      ...data,
+      created_by: user?.id || null,
+    });
+    setCandidates([newCandidate, ...candidates]);
+    setModalOpen(false);
   };
 
-  const handleUpdate = async (data: Omit<Candidate, 'id' | 'created_at' | 'updated_at'>) => {
+const handleUpdate = async (data: Omit<Candidate, 'id' | 'created_at' | 'updated_at'>) => {
     if (!selectedCandidate) return;
-    try {
-      const updated = await candidatesService.update(selectedCandidate.id, data);
-      setCandidates(candidates.map(c => c.id === updated.id ? updated : c));
-      setSelectedCandidate(updated);
-      setModalOpen(false);
-    } catch (err) {
-      throw err;
-    }
+    const updated = await candidatesService.update(selectedCandidate.id, data);
+    setCandidates(candidates.map(c => c.id === updated.id ? updated : c));
+    setSelectedCandidate(updated);
+    setModalOpen(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -110,7 +102,7 @@ export function Candidates() {
         }}
         onStatusChange={async (status) => {
           try {
-            const updated = await candidatesService.updateStatus(selectedCandidate.id, status);
+            const updated = await candidatesService.updateStatus(selectedCandidate.id, status ?? 'New');
             setCandidates(candidates.map(c => c.id === updated.id ? updated : c));
             setSelectedCandidate(updated);
           } catch (err) {

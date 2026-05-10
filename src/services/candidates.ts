@@ -1,34 +1,31 @@
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
-type Candidate = Database['public']['Tables']['candidates']['Row'];
 type CandidateInsert = Database['public']['Tables']['candidates']['Insert'];
 type CandidateUpdate = Database['public']['Tables']['candidates']['Update'];
+
+const getOrgId = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data } = await supabase.from('profiles').select('organisation_id').eq('id', user.id).single();
+  return data?.organisation_id;
+};
 
 export const candidatesService = {
   async getAll() {
     const { data, error } = await supabase
       .from('candidates')
       .select('*')
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
-  },
-
-  async getById(id: string) {
-    const { data, error } = await supabase
-      .from('candidates')
-      .select('*')
-      .eq('id', id)
-      .maybeSingle();
+      .order('full_name');
     if (error) throw error;
     return data;
   },
 
   async create(candidate: CandidateInsert) {
+    const organisation_id = await getOrgId();
     const { data, error } = await supabase
       .from('candidates')
-      .insert([candidate])
+      .insert([{ ...candidate, organisation_id }])
       .select()
       .single();
     if (error) throw error;
@@ -54,33 +51,29 @@ export const candidatesService = {
     if (error) throw error;
   },
 
-  async getNotes(candidateId: string) {
+  async updateStatus(id: string, status: string) {
     const { data, error } = await supabase
-      .from('notes')
-      .select('*, creator:created_by(full_name)')
-      .eq('entity_type', 'candidate')
-      .eq('entity_id', candidateId)
-      .order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
-  },
-
-  async addNote(candidateId: string, content: string, userId: string) {
-    const { data, error } = await supabase
-      .from('notes')
-      .insert([{
-        entity_type: 'candidate',
-        entity_id: candidateId,
-        content,
-        created_by: userId,
-      }])
+      .from('candidates')
+      .update({ status })
+      .eq('id', id)
       .select()
       .single();
     if (error) throw error;
     return data;
   },
 
-  async deleteNote(noteId: string) {
+async getNotes(entityId: string) {
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*, creator:created_by(full_name)')
+      .eq('entity_id', entityId)
+      .eq('entity_type', 'candidate')
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
+async deleteNote(noteId: string) {
     const { error } = await supabase
       .from('notes')
       .delete()
@@ -88,7 +81,17 @@ export const candidatesService = {
     if (error) throw error;
   },
 
-  async updateStatus(id: string, status: Candidate['status']) {
-    return this.update(id, { status });
+  async addNote(entityId: string, content: string, createdBy: string) {
+    const organisation_id = await getOrgId();
+    const { error } = await supabase
+      .from('notes')
+      .insert([{
+        entity_type: 'candidate',
+        entity_id: entityId,
+        content,
+        created_by: createdBy,
+        organisation_id,
+      }]);
+    if (error) throw error;
   },
 };

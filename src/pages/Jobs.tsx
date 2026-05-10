@@ -45,40 +45,32 @@ export function Jobs() {
     }
   };
 
-  const handleCreate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const newJob = await jobsService.create({
-        ...data,
-        created_by: user?.id || null,
-      });
-      setJobs([newJob, ...jobs]);
-      setModalOpen(false);
-    } catch (err) {
-      throw err;
-    }
-  };
+const handleCreate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => {
+  const newJob = await jobsService.create({
+    ...data,
+    created_by: user?.id || null,
+  });
+  setJobs([newJob, ...jobs]);
+  setModalOpen(false);
+};
 
-  const handleUpdate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => {
-    if (!selectedJob) return;
-    try {
-      const updated = await jobsService.update(selectedJob.id, data);
-      setJobs(jobs.map(j => j.id === updated.id ? updated : j));
-      setSelectedJob(updated);
-      setModalOpen(false);
-    } catch (err) {
-      throw err;
-    }
-  };
+const handleUpdate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => {
+  if (!selectedJob) return;
+  const updated = await jobsService.update(selectedJob.id, data);
+  setJobs(jobs.map(j => j.id === updated.id ? updated : j));
+  setSelectedJob(updated);
+  setModalOpen(false);
+};
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this job?')) return;
-    try {
-      await jobsService.delete(id);
-      setJobs(jobs.filter(j => j.id !== id));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete job');
-    }
-  };
+const handleDelete = async (id: string) => {
+  if (!confirm('Are you sure you want to delete this job?')) return;
+  try {
+    await jobsService.delete(id);
+    setJobs(jobs.filter(j => j.id !== id));
+  } catch (err) {
+    setError(err instanceof Error ? err.message : 'Failed to delete job');
+  }
+};
 
   const openJobDetail = async (job: any) => {
     setSelectedJob(job);
@@ -105,7 +97,7 @@ export function Jobs() {
         }}
         onStatusChange={async (status) => {
           try {
-            const updated = await jobsService.updateStatus(selectedJob.id, status);
+            const updated = await jobsService.updateStatus(selectedJob.id, status ?? 'Open');
             setJobs(jobs.map(j => j.id === updated.id ? updated : j));
             setSelectedJob(updated);
           } catch (err) {

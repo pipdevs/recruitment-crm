@@ -1,9 +1,15 @@
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
-type JobApplication = Database['public']['Tables']['job_applications']['Row'];
 type JobApplicationInsert = Database['public']['Tables']['job_applications']['Insert'];
 type JobApplicationUpdate = Database['public']['Tables']['job_applications']['Update'];
+
+const getOrgId = async () => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('Not authenticated');
+  const { data } = await supabase.from('profiles').select('organisation_id').eq('id', user.id).single();
+  return data?.organisation_id;
+};
 
 export const jobApplicationsService = {
   async getAll() {
@@ -50,9 +56,10 @@ export const jobApplicationsService = {
   },
 
   async create(application: JobApplicationInsert) {
+    const organisation_id = await getOrgId();
     const { data, error } = await supabase
       .from('job_applications')
-      .insert([application])
+      .insert([{ ...application, organisation_id }])
       .select()
       .single();
     if (error) throw error;

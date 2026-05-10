@@ -13,6 +13,8 @@ import { Contacts } from './pages/Contacts';
 import { JobApplications } from './pages/JobApplications';
 import { Placements } from './pages/Placements';
 import { useState } from 'react';
+import { Team } from './pages/Team';
+import { AcceptInvite } from './pages/AcceptInvite';
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -38,20 +40,28 @@ export default function App() {
   }
 
   return (
-    <Layout>
+    <>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/candidates" element={<Candidates />} />
-        <Route path="/companies" element={<Companies />} />
-        <Route path="/jobs" element={<Jobs />} />
-        <Route path="/applications" element={<JobApplications />} />
-        <Route path="/placements" element={<Placements />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/notes" element={<Notes />} />
-        <Route path="/contacts" element={<Contacts />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/invite/:token" element={<AcceptInvite />} />
+        <Route path="*" element={
+          <Layout>
+            <Routes>
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/candidates" element={<Candidates />} />
+              <Route path="/companies" element={<Companies />} />
+              <Route path="/jobs" element={<Jobs />} />
+              <Route path="/applications" element={<JobApplications />} />
+              <Route path="/placements" element={<Placements />} />
+              <Route path="/tasks" element={<Tasks />} />
+              <Route path="/notes" element={<Notes />} />
+              <Route path="/contacts" element={<Contacts />} />
+              <Route path="/team" element={<Team />} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Layout>
+        } />
       </Routes>
-    </Layout>
+    </>
   );
 }

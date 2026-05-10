@@ -74,6 +74,7 @@ export function JobModal({ isOpen, job, onClose, onSubmit }: JobModalProps) {
         salary_range: salaryRange || null,
         created_by: job?.created_by || null,
         assigned_to: job?.assigned_to || null,
+        organisation_id: null,
       });
 
       onClose();

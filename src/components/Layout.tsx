@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Users, Building2, Briefcase, CheckSquare,
   StickyNote, LogOut, LayoutDashboard, Users2,
-  TrendingUp, GitMerge
+  TrendingUp, GitMerge, UserCog
 } from 'lucide-react';
 
 interface LayoutProps {
@@ -32,6 +32,7 @@ export function Layout({ children }: LayoutProps) {
     { to: '/placements', label: 'Placements', icon: TrendingUp },
     { to: '/tasks', label: 'Tasks', icon: CheckSquare },
     { to: '/notes', label: 'Notes', icon: StickyNote },
+    { to: '/team', label: 'Team', icon: UserCog },
   ];
 
   return (

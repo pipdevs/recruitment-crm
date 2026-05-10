@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { Login } from './components/Login';
 import { SignUp } from './components/SignUp';
@@ -9,11 +9,14 @@ import { Companies } from './pages/Companies';
 import { Jobs } from './pages/Jobs';
 import { Tasks } from './pages/Tasks';
 import { Notes } from './pages/Notes';
+import { Contacts } from './pages/Contacts';
+import { JobApplications } from './pages/JobApplications';
+import { Placements } from './pages/Placements';
+import { useState } from 'react';
 
-function App() {
+export default function App() {
   const { user, loading } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [currentPage, setCurrentPage] = useState('dashboard');
 
   if (loading) {
     return (
@@ -34,30 +37,21 @@ function App() {
     );
   }
 
-  const renderPage = () => {
-    switch (currentPage) {
-      case 'dashboard':
-        return <Dashboard />;
-      case 'candidates':
-        return <Candidates />;
-      case 'companies':
-        return <Companies />;
-      case 'jobs':
-        return <Jobs />;
-      case 'tasks':
-        return <Tasks />;
-      case 'notes':
-        return <Notes />;
-      default:
-        return <Dashboard />;
-    }
-  };
-
   return (
-    <Layout currentPage={currentPage} onNavigate={setCurrentPage}>
-      {renderPage()}
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/candidates" element={<Candidates />} />
+        <Route path="/companies" element={<Companies />} />
+        <Route path="/jobs" element={<Jobs />} />
+        <Route path="/applications" element={<JobApplications />} />
+        <Route path="/placements" element={<Placements />} />
+        <Route path="/tasks" element={<Tasks />} />
+        <Route path="/notes" element={<Notes />} />
+        <Route path="/contacts" element={<Contacts />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      </Routes>
     </Layout>
   );
 }
-
-export default App;

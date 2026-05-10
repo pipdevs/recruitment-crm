@@ -1,22 +1,17 @@
 import { ReactNode } from 'react';
+import { NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import {
-  Users,
-  Building2,
-  Briefcase,
-  CheckSquare,
-  StickyNote,
-  LogOut,
-  LayoutDashboard
+  Users, Building2, Briefcase, CheckSquare,
+  StickyNote, LogOut, LayoutDashboard, Users2,
+  TrendingUp, GitMerge
 } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
-  currentPage?: string;
-  onNavigate: (page: string) => void;
 }
 
-export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
+export function Layout({ children }: LayoutProps) {
   const { profile, signOut } = useAuth();
 
   const handleSignOut = async () => {
@@ -28,12 +23,15 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
   };
 
   const navItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'candidates', label: 'Candidates', icon: Users },
-    { id: 'companies', label: 'Companies', icon: Building2 },
-    { id: 'jobs', label: 'Jobs', icon: Briefcase },
-    { id: 'tasks', label: 'Tasks', icon: CheckSquare },
-    { id: 'notes', label: 'Notes', icon: StickyNote },
+    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { to: '/candidates', label: 'Candidates', icon: Users },
+    { to: '/companies', label: 'Companies', icon: Building2 },
+    { to: '/contacts', label: 'Contacts', icon: Users2 },
+    { to: '/jobs', label: 'Jobs', icon: Briefcase },
+    { to: '/applications', label: 'Applications', icon: GitMerge },
+    { to: '/placements', label: 'Placements', icon: TrendingUp },
+    { to: '/tasks', label: 'Tasks', icon: CheckSquare },
+    { to: '/notes', label: 'Notes', icon: StickyNote },
   ];
 
   return (
@@ -52,20 +50,21 @@ export function Layout({ children, currentPage, onNavigate }: LayoutProps) {
         <nav className="flex-1 p-4 space-y-1">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive = currentPage === item.id;
             return (
-              <button
-                key={item.id}
-                onClick={() => onNavigate(item.id)}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-blue-50 text-blue-700'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className={({ isActive }) =>
+                  `w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-700 hover:bg-gray-100'
+                  }`
+                }
               >
                 <Icon className="w-5 h-5" />
                 <span>{item.label}</span>
-              </button>
+              </NavLink>
             );
           })}
         </nav>

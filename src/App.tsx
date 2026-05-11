@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { Login } from './components/Login';
 import { SignUp } from './components/SignUp';
@@ -14,17 +14,19 @@ import { JobApplications } from './pages/JobApplications';
 import { Placements } from './pages/Placements';
 import { Team } from './pages/Team';
 import { AcceptInvite } from './pages/AcceptInvite';
-import { useState } from 'react';
 import { Landing } from './pages/Landing';
-import { useLocation } from 'react-router-dom';
+import { ResetPassword } from './pages/ResetPassword';
+import { useState } from 'react';
 
 function ProtectedApp() {
   const location = useLocation();
-  if (location.pathname === '/') {
-  return <Landing />;
-}
   const { user, loading } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+
+  // All hooks called above — safe to return early now
+  if (location.pathname === '/') {
+    return <Landing />;
+  }
 
   if (loading) {
     return (
@@ -69,6 +71,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/invite/:token" element={<AcceptInvite />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="*" element={<ProtectedApp />} />
     </Routes>
   );

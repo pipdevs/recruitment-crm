@@ -1,0 +1,72 @@
+/* ============================================================
+   RECTOCRM — Design Tokens
+   Change values here to update the entire app
+   ============================================================ */
+
+:root {
+  /* Brand Colours */
+  --color-accent:        #0d9488;   /* Teal — primary brand colour */
+  --color-accent-light:  #14b8a6;   /* Teal light — hover states */
+  --color-accent-dark:   #0f766e;   /* Teal dark — active states */
+  --color-accent-subtle: #f0fdfa;   /* Teal tint — backgrounds */
+  --color-accent-border: #99f6e4;   /* Teal border */
+
+  /* Neutrals */
+  --color-bg:            #ffffff;
+  --color-bg-subtle:     #f8fafc;
+  --color-bg-muted:      #f1f5f9;
+  --color-border:        #e2e8f0;
+  --color-border-strong: #cbd5e1;
+
+  /* Text */
+  --color-text:          #0f172a;   /* Near black — headings */
+  --color-text-secondary:#475569;   /* Slate — body copy */
+  --color-text-muted:    #94a3b8;   /* Light slate — captions */
+  --color-text-inverse:  #ffffff;   /* White — on dark backgrounds */
+
+  /* Semantic */
+  --color-success:       #16a34a;
+  --color-warning:       #d97706;
+  --color-error:         #dc2626;
+  --color-info:          #0284c7;
+
+  /* Typography */
+  --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif:   'Playfair Display', Georgia, serif;
+
+  /* Font Sizes */
+  --text-xs:   0.75rem;
+  --text-sm:   0.875rem;
+  --text-base: 1rem;
+  --text-lg:   1.125rem;
+  --text-xl:   1.25rem;
+  --text-2xl:  1.5rem;
+  --text-3xl:  1.875rem;
+  --text-4xl:  2.25rem;
+  --text-5xl:  3rem;
+  --text-6xl:  3.75rem;
+
+  /* Spacing */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-24: 6rem;
+
+  /* Radius */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md:  0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07);
+  --shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.07);
+  --shadow-xl:  0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.08);
+}

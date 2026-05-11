@@ -15,8 +15,14 @@ import { Placements } from './pages/Placements';
 import { Team } from './pages/Team';
 import { AcceptInvite } from './pages/AcceptInvite';
 import { useState } from 'react';
+import { Landing } from './pages/Landing';
+import { useLocation } from 'react-router-dom';
 
 function ProtectedApp() {
+  const location = useLocation();
+  if (location.pathname === '/') {
+  return <Landing />;
+}
   const { user, loading } = useAuth();
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 

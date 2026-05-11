@@ -131,12 +131,20 @@ export function Notes() {
     if (!newNote.trim() || !entityId || !user) return;
     setAddingNote(true);
     try {
-      const { error } = await supabase.from('notes').insert([{
-        content: newNote,
-        entity_type: entityType,
-        entity_id: entityId,
-        created_by: user.id,
-      }]);
+      const { data: profileData } = await supabase
+  .from('profiles')
+  .select('organisation_id')
+  .eq('id', user.id)
+  .single();
+
+  const { error } = await supabase.from('notes').insert([{
+    content: newNote,
+    entity_type: entityType,
+    entity_id: entityId,
+    created_by: user.id,
+    organisation_id: profileData?.organisation_id,
+  }]);
+
       if (error) throw error;
       setNewNote('');
       await loadNotes();

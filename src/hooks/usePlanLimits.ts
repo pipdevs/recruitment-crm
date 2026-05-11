@@ -19,13 +19,29 @@ const FREE_LIMITS = {
   members: 1,
 };
 
+const DEFAULT_LIMITS: PlanLimits = {
+  plan: 'free',
+  isPro: false,
+  candidates: { current: 0, max: FREE_LIMITS.candidates, reached: false },
+  jobs: { current: 0, max: FREE_LIMITS.jobs, reached: false },
+  members: { current: 0, max: FREE_LIMITS.members, reached: false },
+  canAccessPlacements: false,
+  canAccessContacts: true,
+  loading: true,
+};
+
 export function usePlanLimits(): PlanLimits {
-  const { organisation } = useAuth();
+  const auth = useAuth();
+  const organisation = auth?.organisation;
   const [counts, setCounts] = useState({ candidates: 0, jobs: 0, members: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (organisation) loadCounts();
+    if (organisation) {
+      loadCounts();
+    } else {
+      setLoading(false);
+    }
   }, [organisation]);
 
   const loadCounts = async () => {
@@ -68,7 +84,7 @@ export function usePlanLimits(): PlanLimits {
       reached: !isPro && counts.members >= FREE_LIMITS.members,
     },
     canAccessPlacements: isPro,
-    canAccessContacts: isPro,
+    canAccessContacts: true,
     loading,
   };
 }

@@ -5,8 +5,6 @@ import { teamService } from '../services/team';
 import { usePlanLimits } from '../hooks/usePlanLimits';
 import { UpgradePrompt } from '../components/UpgradePrompt';
 
-const limits = usePlanLimits();
-
 type UserRole = 'Admin' | 'Manager' | 'Recruiter';
 
 const ROLE_ICONS: Record<UserRole, React.ReactNode> = {
@@ -39,6 +37,7 @@ interface Invite {
 
 export function Team() {
   const { user, profile, organisation } = useAuth();
+  const limits = usePlanLimits();
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);

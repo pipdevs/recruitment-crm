@@ -49,6 +49,7 @@ const fmt = (n: number) => new Intl.NumberFormat('en-GB', {
 }).format(n);
 
 export function Placements() {
+  const limits = usePlanLimits();
   const { user } = useAuth();
   const [placements, setPlacements] = useState<Placement[]>([]);
   const [summary, setSummary] = useState<Summary>({ total: 0, paid: 0, pending: 0, invoiced: 0, count: 0, thisMonth: 0 });
@@ -109,22 +110,28 @@ export function Placements() {
     return matchesSearch && matchesStatus;
   });
 
-  const limits = usePlanLimits();
-  
-  if (!limits.loading && !limits.canAccessPlacements) {
-  return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Placements</h1>
-        <p className="text-gray-600">Track placed candidates and recruitment fees</p>
+  if (limits.loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
       </div>
-      <UpgradePrompt
-        title="Placements & Fee Tracking is a Pro feature"
-        description="Upgrade to Pro to track placements, record fees, and monitor your revenue pipeline."
-      />
-    </div>
-  );
-}
+    );
+  }
+
+  if (!limits.canAccessPlacements) {
+    return (
+      <div className="p-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Placements</h1>
+          <p className="text-gray-600">Track placed candidates and recruitment fees</p>
+        </div>
+        <UpgradePrompt
+          title="Placements & Fee Tracking is a Pro feature"
+          description="Upgrade to Pro to track placements, record fees, and monitor your revenue pipeline."
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-8">

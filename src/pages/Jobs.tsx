@@ -6,6 +6,8 @@ import { ActivityFeed } from '../components/ActivityFeed';
 import { jobsService } from '../services/jobs';
 import { activitiesService } from '../services/activities';
 import type { Database } from '../lib/database.types';
+import { usePlanLimits } from '../hooks/usePlanLimits';
+import { UpgradePrompt } from '../components/UpgradePrompt';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
 
@@ -28,6 +30,7 @@ export function Jobs() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const limits = usePlanLimits();
 
   useEffect(() => {
     loadJobs();
@@ -125,16 +128,21 @@ const handleDelete = async (id: string) => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Jobs</h1>
           <p className="text-gray-600">Manage job postings and openings</p>
         </div>
-        <button
-          onClick={() => {
-            setSelectedJob(undefined);
-            setModalOpen(true);
-          }}
-          className="flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Job
-        </button>
+        {limits.jobs.reached ? (
+          <UpgradePrompt
+            compact
+            title={`Free plan limit reached (${limits.jobs.max} open jobs)`}
+            description=""
+          />
+        ) : (
+          <button
+            onClick={() => { setSelectedJob(null); setModalOpen(true); }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Add Job
+          </button>
+        )}
       </div>
 
       {error && (

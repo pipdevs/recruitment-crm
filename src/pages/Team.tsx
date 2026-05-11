@@ -2,6 +2,10 @@ import { useState, useEffect } from 'react';
 import { Users, Mail, Trash2, Crown, Shield, User, Copy, Check, Plus, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { teamService } from '../services/team';
+import { usePlanLimits } from '../hooks/usePlanLimits';
+import { UpgradePrompt } from '../components/UpgradePrompt';
+
+const limits = usePlanLimits();
 
 type UserRole = 'Admin' | 'Manager' | 'Recruiter';
 
@@ -103,13 +107,21 @@ export function Team() {
           </p>
         </div>
         {isAdmin && (
-          <button
-            onClick={() => setShowInviteModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="w-5 h-5" />
-            Invite Member
-          </button>
+          limits.members.reached ? (
+            <UpgradePrompt
+              compact
+              title="Upgrade to Pro to invite team members"
+              description=""
+            />
+          ) : (
+            <button
+              onClick={() => setShowInviteModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="w-5 h-5" />
+              Invite Member
+            </button>
+          )
         )}
       </div>
 

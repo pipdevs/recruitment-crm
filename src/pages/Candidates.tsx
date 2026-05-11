@@ -7,6 +7,8 @@ import { ActivityFeed } from '../components/ActivityFeed';
 import { candidatesService } from '../services/candidates';
 import { activitiesService } from '../services/activities';
 import type { Database } from '../lib/database.types';
+import { usePlanLimits } from '../hooks/usePlanLimits';
+import { UpgradePrompt } from '../components/UpgradePrompt';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
 
@@ -33,6 +35,7 @@ export function Candidates() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const limits = usePlanLimits();
 
   useEffect(() => {
     loadCandidates();
@@ -155,16 +158,21 @@ const handleUpdate = async (data: Omit<Candidate, 'id' | 'created_at' | 'updated
               Pipeline
             </button>
           </div>
+          {limits.candidates.reached ? (
+          <UpgradePrompt
+            compact
+            title={`Free plan limit reached (${limits.candidates.max} candidates)`}
+            description=""
+          />
+        ) : (
           <button
-            onClick={() => {
-              setSelectedCandidate(undefined);
-              setModalOpen(true);
-            }}
+            onClick={() => { setSelectedCandidate(undefined); setModalOpen(true); }}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-5 h-5" />
             Add Candidate
           </button>
+        )}
         </div>
       </div>
 

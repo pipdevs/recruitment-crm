@@ -6,6 +6,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { placementsService } from '../services/placements';
 import { supabase } from '../lib/supabase';
+import { usePlanLimits } from '../hooks/usePlanLimits';
+import { UpgradePrompt } from '../components/UpgradePrompt';
 
 type FeeStatus = 'Pending' | 'Invoiced' | 'Paid';
 
@@ -106,6 +108,23 @@ export function Placements() {
     const matchesStatus = statusFilter === 'All' || p.fee_status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
+  const limits = usePlanLimits();
+  
+  if (!limits.loading && !limits.canAccessPlacements) {
+  return (
+    <div className="p-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Placements</h1>
+        <p className="text-gray-600">Track placed candidates and recruitment fees</p>
+      </div>
+      <UpgradePrompt
+        title="Placements & Fee Tracking is a Pro feature"
+        description="Upgrade to Pro to track placements, record fees, and monitor your revenue pipeline."
+      />
+    </div>
+  );
+}
 
   return (
     <div className="p-8">

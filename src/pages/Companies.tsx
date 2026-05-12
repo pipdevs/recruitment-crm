@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react';
 import { Building2, Edit2, Trash2, Plus, Link as LinkIcon } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { CompanyModal } from '../components/CompanyModal';
-import { ActivityFeed } from '../components/ActivityFeed';
 import { companiesService } from '../services/companies';
-import { activitiesService } from '../services/activities';
+import { ActivityPanel } from '../components/ActivityPanel';
 import type { Database } from '../lib/database.types';
 
 type Company = Database['public']['Tables']['companies']['Row'];
@@ -227,160 +226,69 @@ interface CompanyDetailProps {
 }
 
 function CompanyDetail({ company, onBack, onEdit, onDelete }: CompanyDetailProps) {
-  const { user } = useAuth();
-  const [notes, setNotes] = useState<any[]>([]);
-  const [newNote, setNewNote] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [addingNote, setAddingNote] = useState(false);
-
-  useEffect(() => {
-    loadNotes();
-  }, []);
-
-  const loadNotes = async () => {
-    try {
-      setLoading(true);
-      const data = await companiesService.getNotes(company.id);
-      setNotes(data || []);
-    } catch (err) {
-      console.error('Failed to load notes:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleAddNote = async () => {
-    if (!newNote.trim() || !user) return;
-    setAddingNote(true);
-    try {
-      await companiesService.addNote(company.id, newNote, user.id);
-      await activitiesService.createNote('company', company.id, newNote, user.id);
-      setNewNote('');
-      await loadNotes();
-    } catch (err) {
-      console.error('Failed to add note:', err);
-    } finally {
-      setAddingNote(false);
-    }
-  };
-
-  const handleDeleteNote = async (noteId: string) => {
-    try {
-      await companiesService.deleteNote(noteId);
-      await loadNotes();
-    } catch (err) {
-      console.error('Failed to delete note:', err);
-    }
-  };
-
   return (
     <div className="p-8">
-      <button
-        onClick={onBack}
-        className="mb-6 text-blue-600 hover:text-blue-700 font-medium"
-      >
+      <button onClick={onBack} className="mb-6 text-blue-600 hover:text-blue-700 font-medium">
         ← Back to Companies
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        {/* Left — company info */}
+        <div className="lg:col-span-1">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-start justify-between mb-4">
-              <h1 className="text-3xl font-bold text-gray-900">{company.name}</h1>
+              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-green-700 font-bold text-xl">
+                  {company.name.charAt(0).toUpperCase()}
+                </span>
+              </div>
               <div className="flex gap-2">
-                <button
-                  onClick={onEdit}
-                  className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-                >
-                  <Edit2 className="w-5 h-5" />
+                <button onClick={onEdit} className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors">
+                  <Edit2 className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={onDelete}
-                  className="p-2 text-gray-500 hover:bg-red-100 hover:text-red-600 rounded-lg transition-colors"
-                >
-                  <Trash2 className="w-5 h-5" />
+                <button onClick={onDelete} className="p-2 text-gray-500 hover:bg-red-100 hover:text-red-600 rounded-lg transition-colors">
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {company.industry && (
-              <p className="text-gray-600 mb-3">Industry: <span className="font-medium">{company.industry}</span></p>
-            )}
+            <h1 className="text-xl font-bold text-gray-900 mb-4">{company.name}</h1>
 
-            {company.website && (
-              <a
-                href={company.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-blue-600 hover:text-blue-700 mb-3"
-              >
-                <LinkIcon className="w-4 h-4" />
-                {company.website}
-              </a>
-            )}
-
-            {company.notes && (
-              <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-100">
-                <p className="text-sm text-gray-700">{company.notes}</p>
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Activity Timeline</h2>
-            <ActivityFeed entityType="company" entityId={company.id} />
+            <div className="space-y-3 text-sm">
+              {company.industry && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Industry</p>
+                  <p className="font-medium text-gray-900">{company.industry}</p>
+                </div>
+              )}
+              {company.website && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Website</p>
+                  <a href={company.website} target="_blank" rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline break-all">
+                    {company.website}
+                  </a>
+                </div>
+              )}
+              {company.notes && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Notes</p>
+                  <p className="text-gray-700">{company.notes}</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 h-fit">
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Notes</h2>
-
-          <div className="space-y-3 mb-4">
-            <textarea
-              value={newNote}
-              onChange={(e) => setNewNote(e.target.value)}
-              placeholder="Add a note..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              rows={3}
-            />
-            <button
-              onClick={handleAddNote}
-              disabled={!newNote.trim() || addingNote}
-              className="w-full px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-            >
-              {addingNote ? 'Adding...' : 'Add Note'}
-            </button>
-          </div>
-
-          {loading ? (
-            <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"></div>
-            </div>
-          ) : notes.length === 0 ? (
-            <p className="text-sm text-gray-500 text-center py-4">No notes yet</p>
-          ) : (
-            <div className="space-y-3 max-h-64 overflow-y-auto">
-              {notes.map((note) => (
-                <div key={note.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <div className="flex justify-between items-start mb-2">
-                    <p className="text-xs text-gray-600 font-medium">
-                      {note.creator?.full_name || 'Unknown'}
-                    </p>
-                    <button
-                      onClick={() => handleDeleteNote(note.id)}
-                      className="text-gray-400 hover:text-red-600 transition-colors"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <p className="text-sm text-gray-700">{note.content}</p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    {new Date(note.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
+        {/* Right — tabbed activity panel */}
+        <div className="lg:col-span-2">
+          <ActivityPanel
+            entityType="company"
+            entityId={company.id}
+            addNote={(content, userId) => companiesService.addNote(company.id, content, userId)}
+            getNotes={(id) => companiesService.getNotes(id)}
+            deleteNote={(noteId) => companiesService.deleteNote(noteId)}
+          />
         </div>
       </div>
     </div>

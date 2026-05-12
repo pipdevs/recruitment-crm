@@ -4,8 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   Users, Building2, Briefcase, CheckSquare,
   StickyNote, LogOut, LayoutDashboard, Users2,
-  TrendingUp, GitMerge, UserCog
+  TrendingUp, GitMerge, UserCog, CreditCard
 } from 'lucide-react';
+import { GlobalSearch } from './GlobalSearch';
 
 interface LayoutProps {
   children: ReactNode;
@@ -33,13 +34,15 @@ export function Layout({ children }: LayoutProps) {
     { to: '/tasks', label: 'Tasks', icon: CheckSquare },
     { to: '/notes', label: 'Notes', icon: StickyNote },
     { to: '/team', label: 'Team', icon: UserCog },
+    { to: '/billing', label: 'Billing', icon: CreditCard },
   ];
 
   return (
     <div className="flex h-screen bg-gray-50">
+      {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900">RecruitCRM</h1>
+          <h1 className="text-2xl font-bold text-gray-900">RectoCRM</h1>
           {profile && (
             <div className="mt-4">
               <p className="text-sm font-medium text-gray-900">{profile.full_name}</p>
@@ -48,7 +51,7 @@ export function Layout({ children }: LayoutProps) {
           )}
         </div>
 
-        <nav className="flex-1 p-4 space-y-1">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -81,9 +84,18 @@ export function Layout({ children }: LayoutProps) {
         </div>
       </aside>
 
-      <main className="flex-1 overflow-auto">
-        {children}
-      </main>
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top bar with global search */}
+        <div className="h-14 bg-white border-b border-gray-200 flex items-center px-6 flex-shrink-0">
+          <GlobalSearch />
+        </div>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-auto">
+          {children}
+        </main>
+      </div>
     </div>
   );
 }

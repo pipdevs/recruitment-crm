@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { Database } from '../lib/database.types';
+import { supabase } from '../lib/supabase';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 
@@ -37,8 +38,20 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    setLoading(true);
 
+    // Check for duplicate before submitting
+    const { data: existing } = await supabase
+      .from('companies')
+      .select('id, name')
+      .ilike('name', name.trim())
+      .maybeSingle();
+
+    if (existing && existing.id !== company?.id) {
+      setError(`A company called "${existing.name}" already exists. Please check before adding a duplicate.`);
+      return;
+    }
+
+    setLoading(true);
     try {
       await onSubmit({
         name,
@@ -49,15 +62,13 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
         assigned_to: null,
         organisation_id: null,
       });
-
       onClose();
-    } catch (err) {
-      console.error(err)
-  setError(
-      err && typeof err === 'object' && 'message' in err
-      ? String(err.message)
-      : JSON.stringify(err)
-  )          
+    } catch (err: any) {
+      if (err?.code === '23505') {
+        setError('A company with this name already exists in your organisation.');
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to save company');
+      }
     } finally {
       setLoading(false);
     }

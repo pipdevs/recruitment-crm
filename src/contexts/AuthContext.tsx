@@ -52,13 +52,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const loadProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
+      // Retry up to 5 times with 500ms delay
+      // The database trigger may not have run yet on first login
+      let data = null;
+      for (let i = 0; i < 5; i++) {
+        const { data: result, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .maybeSingle();
 
-      if (error) throw error;
+        if (error) throw error;
+
+        if (result) {
+          data = result;
+          break;
+        }
+
+        // Profile not created yet by trigger — wait and retry
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
 
       if (data) {
         setProfile(data);
@@ -68,37 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // No profile found — auto-create org and profile
-      const { data: newOrg, error: orgError } = await supabase
-        .from('organisations')
-        .insert([{ name: 'My Organisation', plan: 'free' }])
-        .select()
-        .single();
-
-      if (orgError) {
-        console.error('Failed to create organisation:', orgError);
-        return;
-      }
-
-      const { data: newProfile, error: profileError } = await supabase
-        .from('profiles')
-        .insert([{
-          id: userId,
-          full_name: 'New User',
-          role: 'Admin',
-          organisation_id: newOrg.id,
-        }])
-        .select()
-        .single();
-
-      if (profileError) {
-        console.error('Failed to create profile:', profileError);
-        return;
-      }
-
-      setProfile(newProfile);
-      setOrganisation(newOrg);
-
+      console.warn('Profile not found after retries for user:', userId);
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -129,32 +112,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     email: string,
     password: string,
     fullName: string,
-    role: Profile['role'],
+    _role: Profile['role'],
     orgName: string,
   ) => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    // Trigger on auth.users insert handles org+profile creation server-side
+    // Pass metadata so trigger can use the correct name and org name
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          org_name: orgName,
+        },
+      },
+    });
     if (error) throw error;
-    if (!data.user) throw new Error('User creation failed');
-
-    const { data: org, error: orgError } = await supabase
-      .from('organisations')
-      .insert([{ name: orgName, plan: 'free' }])
-      .select()
-      .single();
-    if (orgError) throw orgError;
-
-    const { error: profileError } = await supabase
-      .from('profiles')
-      .insert([{
-        id: data.user.id,
-        full_name: fullName,
-        role: role,
-        organisation_id: org.id,
-      }]);
-
-    if (profileError && profileError.code !== '23505') {
-      throw profileError;
-    }
   };
 
   const signOut = async () => {

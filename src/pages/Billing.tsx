@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { CheckCircle, Zap, TrendingUp, Check } from 'lucide-react';
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { CheckCircle, Check } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { billingService } from '../services/billing';
 
@@ -43,7 +43,6 @@ const PLANS = [
 
 export function Billing() {
   const { organisation } = useAuth();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -74,7 +73,7 @@ export function Billing() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Billing</h1>
         <p className="text-gray-600">
-          Current plan: <span className="font-semibold capitalize">{organisation?.plan}</span>
+          Current plan: <span className="font-semibold capitalize">{organisation?.plan ?? 'free'}</span>
         </p>
       </div>
 

@@ -68,14 +68,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      console.warn('No profile found for user:', userId);
+      // No profile found — auto-create org and profile
+      const { data: newOrg, error: orgError } = await supabase
+        .from('organisations')
+        .insert([{ name: 'My Organisation', plan: 'free' }])
+        .select()
+        .single();
+
+      if (orgError) {
+        console.error('Failed to create organisation:', orgError);
+        return;
+      }
+
+      const { data: newProfile, error: profileError } = await supabase
+        .from('profiles')
+        .insert([{
+          id: userId,
+          full_name: 'New User',
+          role: 'Admin',
+          organisation_id: newOrg.id,
+        }])
+        .select()
+        .single();
+
+      if (profileError) {
+        console.error('Failed to create profile:', profileError);
+        return;
+      }
+
+      setProfile(newProfile);
+      setOrganisation(newOrg);
+
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
       setLoading(false);
     }
   };
-
 
   const loadOrganisation = async (orgId: string) => {
     try {
@@ -103,12 +132,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     role: Profile['role'],
     orgName: string,
   ) => {
-    // 1. Create auth user
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) throw error;
     if (!data.user) throw new Error('User creation failed');
 
-    // 2. Create organisation
     const { data: org, error: orgError } = await supabase
       .from('organisations')
       .insert([{ name: orgName, plan: 'free' }])
@@ -116,7 +143,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .single();
     if (orgError) throw orgError;
 
-    // 3. Create profile linked to organisation
     const { error: profileError } = await supabase
       .from('profiles')
       .insert([{

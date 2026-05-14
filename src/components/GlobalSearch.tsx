@@ -50,7 +50,6 @@ export function GlobalSearch() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd/Ctrl + K to open
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         inputRef.current?.focus();
@@ -98,26 +97,22 @@ export function GlobalSearch() {
 
       const mapped: SearchResult[] = [
         ...(candidates.data || []).map(c => ({
-          id: c.id,
-          type: 'candidate' as const,
+          id: c.id, type: 'candidate' as const,
           title: c.full_name,
           subtitle: c.email || c.status || 'Candidate',
         })),
         ...(companies.data || []).map(c => ({
-          id: c.id,
-          type: 'company' as const,
+          id: c.id, type: 'company' as const,
           title: c.name,
           subtitle: c.industry || 'Company',
         })),
         ...(jobs.data || []).map(j => ({
-          id: j.id,
-          type: 'job' as const,
+          id: j.id, type: 'job' as const,
           title: j.title,
           subtitle: j.status || 'Job',
         })),
         ...(contacts.data || []).map(c => ({
-          id: c.id,
-          type: 'contact' as const,
+          id: c.id, type: 'contact' as const,
           title: c.full_name,
           subtitle: [c.job_title, (c.company as any)?.name].filter(Boolean).join(' · ') || 'Contact',
         })),
@@ -133,10 +128,10 @@ export function GlobalSearch() {
   };
 
   const handleSelect = (result: SearchResult) => {
-    navigate(TYPE_ROUTES[result.type]);
-    setOpen(false);
-    setQuery('');
-    setResults([]);
+  navigate(`${TYPE_ROUTES[result.type]}/${result.id}`);
+  setOpen(false);
+  setQuery('');
+  setResults([]);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -159,18 +154,12 @@ export function GlobalSearch() {
   };
 
   return (
-    <div ref={containerRef} style={{ position: 'relative', flex: 1, maxWidth: 480 }}>
+    <div ref={containerRef} className="relative flex-1 max-w-xl">
       {/* Search Input */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: '0.5rem',
-        background: 'var(--color-bg-subtle)',
-        border: `1px solid ${open ? 'var(--color-accent)' : 'var(--color-border)'}`,
-        borderRadius: 'var(--radius-lg)',
-        padding: '0.5rem 0.75rem',
-        transition: 'border-color 0.2s, box-shadow 0.2s',
-        boxShadow: open ? '0 0 0 3px rgba(13, 148, 136, 0.1)' : 'none',
-      }}>
-        <Search className="w-4 h-4 flex-shrink-0" style={{ color: 'var(--color-text-muted)' }} />
+      <div className={`flex items-center gap-2 bg-slate-50 border rounded-xl px-3 py-2 transition-all ${
+        open ? 'border-teal-500 ring-2 ring-teal-500/10' : 'border-slate-200'
+      }`}>
+        <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
         <input
           ref={inputRef}
           type="text"
@@ -179,62 +168,33 @@ export function GlobalSearch() {
           onFocus={() => setOpen(true)}
           onKeyDown={handleKeyDown}
           placeholder="Search candidates, companies, jobs... (⌘K)"
-          style={{
-            flex: 1, border: 'none', outline: 'none',
-            background: 'transparent',
-            fontSize: 'var(--text-sm)',
-            color: 'var(--color-text)',
-          }}
+          className="flex-1 bg-transparent border-none outline-none text-sm text-slate-900 placeholder:text-slate-400"
         />
-        {query && (
+        {query ? (
           <button
             onClick={() => { setQuery(''); setResults([]); inputRef.current?.focus(); }}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--color-text-muted)' }}
+            className="text-slate-400 hover:text-slate-600 transition-colors p-0 bg-transparent border-none cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
-        )}
-        {!query && (
-          <kbd style={{
-            fontSize: '0.7rem', padding: '0.15rem 0.4rem',
-            background: 'var(--color-bg-muted)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-sm)',
-            color: 'var(--color-text-muted)',
-            fontFamily: 'monospace',
-          }}>⌘K</kbd>
+        ) : (
+          <kbd className="text-xs px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-400 font-mono">
+            ⌘K
+          </kbd>
         )}
       </div>
 
       {/* Dropdown */}
       {open && query.trim().length >= 2 && (
-        <div style={{
-          position: 'absolute', top: 'calc(100% + 8px)',
-          left: 0, right: 0,
-          background: 'white',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-xl)',
-          boxShadow: 'var(--shadow-xl)',
-          zIndex: 1000,
-          overflow: 'hidden',
-          maxHeight: 480,
-          overflowY: 'auto',
-        }}>
+        <div className="absolute top-[calc(100%+8px)] left-0 right-0 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden max-h-[480px] overflow-y-auto">
           {loading && (
-            <div style={{ padding: '1rem', textAlign: 'center' }}>
-              <div style={{
-                width: 20, height: 20,
-                border: '2px solid var(--color-border)',
-                borderTopColor: 'var(--color-accent)',
-                borderRadius: '50%',
-                animation: 'spin 0.6s linear infinite',
-                margin: '0 auto',
-              }} />
+            <div className="p-4 flex justify-center">
+              <div className="w-5 h-5 border-2 border-slate-200 border-t-teal-600 rounded-full animate-spin" />
             </div>
           )}
 
           {!loading && results.length === 0 && (
-            <div style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>
+            <div className="p-6 text-center text-sm text-slate-400">
               No results for "{query}"
             </div>
           )}
@@ -246,18 +206,10 @@ export function GlobalSearch() {
                 if (items.length === 0) return null;
                 return (
                   <div key={type}>
-                    <div style={{
-                      padding: '0.5rem 1rem 0.25rem',
-                      fontSize: 'var(--text-xs)',
-                      fontWeight: 600,
-                      color: 'var(--color-text-muted)',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
-                      background: 'var(--color-bg-subtle)',
-                    }}>
+                    <div className="px-4 pt-2 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-50">
                       {TYPE_LABELS[type]}s
                     </div>
-                    {items.map((result, i) => {
+                    {items.map((result) => {
                       const globalIndex = results.indexOf(result);
                       const isSelected = globalIndex === selected;
                       return (
@@ -265,44 +217,20 @@ export function GlobalSearch() {
                           key={result.id}
                           onClick={() => handleSelect(result)}
                           onMouseEnter={() => setSelected(globalIndex)}
-                          style={{
-                            display: 'flex', alignItems: 'center', gap: '0.75rem',
-                            padding: '0.75rem 1rem',
-                            cursor: 'pointer',
-                            background: isSelected ? 'var(--color-accent-subtle)' : 'white',
-                            borderLeft: isSelected ? '2px solid var(--color-accent)' : '2px solid transparent',
-                            transition: 'background 0.1s',
-                          }}
+                          className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-l-2 ${
+                            isSelected
+                              ? 'bg-teal-50 border-l-teal-500'
+                              : 'bg-white border-l-transparent hover:bg-slate-50'
+                          }`}
                         >
-                          <div style={{
-                            width: 32, height: 32, borderRadius: 'var(--radius-md)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            flexShrink: 0,
-                          }} className={TYPE_COLORS[type]}>
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${TYPE_COLORS[type]}`}>
                             {TYPE_ICONS[type]}
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{
-                              fontSize: 'var(--text-sm)', fontWeight: 500,
-                              color: 'var(--color-text)',
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                            }}>
-                              {result.title}
-                            </p>
-                            <p style={{
-                              fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)',
-                              overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                            }}>
-                              {result.subtitle}
-                            </p>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-900 truncate">{result.title}</p>
+                            <p className="text-xs text-slate-400 truncate">{result.subtitle}</p>
                           </div>
-                          <span style={{
-                            fontSize: 'var(--text-xs)',
-                            color: 'var(--color-text-muted)',
-                            flexShrink: 0,
-                          }}>
-                            {TYPE_LABELS[type]}
-                          </span>
+                          <span className="text-xs text-slate-400 flex-shrink-0">{TYPE_LABELS[type]}</span>
                         </div>
                       );
                     })}
@@ -310,24 +238,15 @@ export function GlobalSearch() {
                 );
               })}
 
-              <div style={{
-                padding: '0.5rem 1rem',
-                borderTop: '1px solid var(--color-border)',
-                display: 'flex', gap: '1rem',
-                background: 'var(--color-bg-subtle)',
-              }}>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>↑↓ navigate</span>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>↵ select</span>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>esc close</span>
+              <div className="px-4 py-2 border-t border-slate-100 flex gap-4 bg-slate-50">
+                <span className="text-xs text-slate-400">↑↓ navigate</span>
+                <span className="text-xs text-slate-400">↵ select</span>
+                <span className="text-xs text-slate-400">esc close</span>
               </div>
             </div>
           )}
         </div>
       )}
-
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-      `}</style>
     </div>
   );
 }

@@ -52,7 +52,7 @@ export function SignUp({ onToggleMode }: SignUpProps) {
               onChange={(e) => setOrgName(e.target.value)}
               required
               placeholder="Acme Recruitment"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
           </div>
 
@@ -64,7 +64,7 @@ export function SignUp({ onToggleMode }: SignUpProps) {
               onChange={(e) => setFullName(e.target.value)}
               required
               placeholder="Jane Smith"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
           </div>
 
@@ -76,7 +76,7 @@ export function SignUp({ onToggleMode }: SignUpProps) {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="jane@company.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
           </div>
 
@@ -89,7 +89,7 @@ export function SignUp({ onToggleMode }: SignUpProps) {
               required
               minLength={6}
               placeholder="Min 6 characters"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             />
           </div>
 
@@ -98,7 +98,7 @@ export function SignUp({ onToggleMode }: SignUpProps) {
             <select
               value={role}
               onChange={(e) => setRole(e.target.value as UserRole)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             >
               <option value="Admin">Admin</option>
               <option value="Manager">Manager</option>
@@ -109,7 +109,7 @@ export function SignUp({ onToggleMode }: SignUpProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 transition-colors font-medium"
+            className="w-full py-2 px-4 bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 transition-colors font-medium"
           >
             {loading ? 'Creating account...' : 'Create Account'}
           </button>
@@ -117,7 +117,7 @@ export function SignUp({ onToggleMode }: SignUpProps) {
 
         <p className="mt-6 text-center text-sm text-gray-600">
           Already have an account?{' '}
-          <button onClick={onToggleMode} className="text-blue-600 hover:underline font-medium">
+          <button onClick={onToggleMode} className="text-teal-600 hover:underline font-medium">
             Sign in
           </button>
         </p>

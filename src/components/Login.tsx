@@ -48,13 +48,13 @@ export function Login({ onToggleMode }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-indigo-100 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl p-8">
 
           <div className="flex items-center justify-center mb-8">
-            <div className="bg-blue-100 p-3 rounded-full">
-              <LogIn className="w-8 h-8 text-blue-600" />
+            <div className="bg-teal-100 p-3 rounded-full">
+              <LogIn className="w-8 h-8 text-teal-600" />
             </div>
           </div>
 
@@ -78,7 +78,7 @@ export function Login({ onToggleMode }: LoginProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     placeholder="you@example.com"
                   />
                 </div>
@@ -89,7 +89,7 @@ export function Login({ onToggleMode }: LoginProps) {
                     <button
                       type="button"
                       onClick={() => { setMode('forgot'); setError(''); }}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      className="text-sm text-teal-600 hover:text-teal-700 font-medium"
                     >
                       Forgot password?
                     </button>
@@ -99,7 +99,7 @@ export function Login({ onToggleMode }: LoginProps) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     placeholder="Enter your password"
                   />
                 </div>
@@ -107,7 +107,7 @@ export function Login({ onToggleMode }: LoginProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
                 >
                   {loading ? 'Signing in...' : 'Sign In'}
                 </button>
@@ -116,7 +116,7 @@ export function Login({ onToggleMode }: LoginProps) {
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                   Don't have an account?{' '}
-                  <button onClick={onToggleMode} className="text-blue-600 font-medium hover:text-blue-700">
+                  <button onClick={onToggleMode} className="text-teal-600 font-medium hover:text-teal-700">
                     Sign up
                   </button>
                 </p>
@@ -146,7 +146,7 @@ export function Login({ onToggleMode }: LoginProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
                     placeholder="you@example.com"
                   />
                 </div>
@@ -154,7 +154,7 @@ export function Login({ onToggleMode }: LoginProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 disabled:opacity-50 transition-colors"
                 >
                   {loading ? 'Sending...' : 'Send Reset Link'}
                 </button>
@@ -163,7 +163,7 @@ export function Login({ onToggleMode }: LoginProps) {
               <div className="mt-6 text-center">
                 <button
                   onClick={() => { setMode('login'); setError(''); }}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className="text-sm text-teal-600 hover:text-teal-700 font-medium"
                 >
                   ← Back to sign in
                 </button>
@@ -188,7 +188,7 @@ export function Login({ onToggleMode }: LoginProps) {
                 </p>
                 <button
                   onClick={() => { setMode('login'); setError(''); }}
-                  className="text-blue-600 font-medium hover:text-blue-700 text-sm"
+                  className="text-teal-600 font-medium hover:text-teal-700 text-sm"
                 >
                   ← Back to sign in
                 </button>

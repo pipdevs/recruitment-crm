@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, Mail, Phone, Building2, Star, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Mail, Phone, Building2, Star, Pencil, Trash2, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { contactsService } from '../services/contacts';
 import { ContactModal } from '../components/ContactModal';
 import type { Database } from '../lib/database.types';
+import { ImportModal } from '../components/ImportModal';
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   company?: { id: string; name: string } | null;
@@ -17,6 +18,7 @@ export function Contacts() {
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
+  const [showImport, setShowImport] = useState(false);
 
   useEffect(() => {
     loadContacts();
@@ -65,13 +67,21 @@ export function Contacts() {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Contacts</h1>
           <p className="text-gray-600">People at your client companies</p>
         </div>
-        <button
-          onClick={() => { setSelectedContact(null); setShowModal(true); }}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="w-5 h-5" />
-          Add Contact
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Upload className="w-4 h-4" /> Import
+          </button>
+          <button
+            onClick={() => { setSelectedContact(null); setShowModal(true); }}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            <Plus className="w-5 h-5" />
+            Add Contact
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -181,6 +191,13 @@ export function Contacts() {
           contact={selectedContact}
           onSubmit={selectedContact ? handleUpdate : handleCreate}
           onClose={() => { setShowModal(false); setSelectedContact(null); }}
+        />
+      )}
+      {showImport && (
+        <ImportModal
+          entityType="contacts"
+          onClose={() => setShowImport(false)}
+          onComplete={loadContacts}
         />
       )}
     </div>

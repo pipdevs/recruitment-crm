@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Edit2, Trash2, Plus, Mail, Phone, Linkedin, List, Columns } from 'lucide-react';
+import { Users, Edit2, Trash2, Plus, Mail, Phone, Linkedin, List, Columns, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CandidateModal } from '../components/CandidateModal';
@@ -10,6 +10,7 @@ import { activitiesService } from '../services/activities';
 import type { Database } from '../lib/database.types';
 import { usePlanLimits } from '../hooks/usePlanLimits';
 import { UpgradePrompt } from '../components/UpgradePrompt';
+import { ImportModal } from '../components/ImportModal';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
 
@@ -35,6 +36,7 @@ export function CandidateList() {
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const limits = usePlanLimits();
+  const [showImport, setShowImport] = useState(false);
 
   useEffect(() => { loadCandidates(); }, []);
 
@@ -107,6 +109,12 @@ export function CandidateList() {
               <Columns className="w-4 h-4" /> Pipeline
             </button>
           </div>
+          <button
+            onClick={() => setShowImport(true)}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Upload className="w-4 h-4" /> Import
+          </button>
           {limits.candidates.reached ? (
             <UpgradePrompt compact title={`Free plan limit reached (${limits.candidates.max} candidates)`} description="" />
           ) : (
@@ -203,6 +211,13 @@ export function CandidateList() {
         onClose={() => { setModalOpen(false); setSelectedCandidate(undefined); }}
         onSubmit={selectedCandidate ? handleUpdate : handleCreate}
       />
+      {showImport && (
+        <ImportModal
+          entityType="candidates"
+          onClose={() => setShowImport(false)}
+          onComplete={loadCandidates}
+        />
+      )}
     </div>
   );
 }

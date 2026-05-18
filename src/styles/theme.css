@@ -31,8 +31,8 @@
   --color-info:          #0284c7;
 
   /* Typography */
-  --font-sans:    'Inter', system-ui, -apple-system, sans-serif;
-  --font-serif:   'Playfair Display', Georgia, serif;
+  --font-sans:    'Outfit', system-ui, -apple-system, sans-serif;
+  --font-serif:   'Libre Baskerville', Georgia, serif;
 
   /* Font Sizes */
   --text-xs:   0.75rem;

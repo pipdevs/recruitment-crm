@@ -42,7 +42,7 @@ export function Layout({ children }: LayoutProps) {
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900">RectoCRM</h1>
+          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'var(--font-serif)' }}>RectoCRM</h1>
           {profile && (
             <div className="mt-4">
               <p className="text-sm font-medium text-gray-900">{profile.full_name}</p>
@@ -61,7 +61,7 @@ export function Layout({ children }: LayoutProps) {
                 className={({ isActive }) =>
                   `w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     isActive
-                      ? 'bg-blue-50 text-blue-700'
+                      ? 'bg-teal-50 text-teal-700'
                       : 'text-gray-700 hover:bg-gray-100'
                   }`
                 }
@@ -72,6 +72,16 @@ export function Layout({ children }: LayoutProps) {
             );
           })}
         </nav>
+
+        {/* Support link */}
+        <div className="px-4 pb-2">
+            <a href="/"
+            className="flex items-center gap-2 px-4 py-2 text-xs text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-50"
+          >
+            <span>✉</span>
+            <span>hello@rectocrm.com</span>
+          </a>
+        </div>
 
         <div className="p-4 border-t border-gray-200">
           <button

@@ -160,7 +160,7 @@ export function Landing() {
             The recruitment CRM{' '}
             <br className="hidden md:block" />
             that{' '}
-            <em className="not-italic text-teal-600" style={{ fontFamily: 'Georgia, "Times New Roman", serif' }}>
+            <em className="not-italic text-teal-600">
               gets out of your way
             </em>
           </h1>

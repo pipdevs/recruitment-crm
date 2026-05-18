@@ -42,7 +42,7 @@ export function Layout({ children }: LayoutProps) {
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-gray-200 flex flex-col">
         <div className="p-6 border-b border-gray-200">
-          <h1 className="text-2xl font-bold text-gray-900" style={{ fontFamily: 'var(--font-serif)' }}>RectoCRM</h1>
+          <h1 className="text-2xl font-bold text-gray-900">RectoCRM</h1>
           {profile && (
             <div className="mt-4">
               <p className="text-sm font-medium text-gray-900">{profile.full_name}</p>

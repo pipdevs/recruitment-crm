@@ -58,6 +58,10 @@ export function validateCandidateRow(
 
   if (!data.full_name?.trim()) {
     errors.push('Name is required');
+  } else if (!sanitiseName(data.full_name)) {
+    // sanitiseName runs at insert time and keeps letters only, so a name made
+    // purely of digits or symbols would otherwise insert as an empty string.
+    errors.push(`Name has no usable letters: ${data.full_name}`);
   }
 
   if (data.email && !isValidEmail(data.email)) {
@@ -79,6 +83,8 @@ export function validateCompanyRow(
   ].some(v => v?.trim());
   if (hasContact && !data.contact_full_name?.trim()) {
     errors.push('Contact name is required when contact details are given');
+  } else if (data.contact_full_name?.trim() && !sanitiseName(data.contact_full_name)) {
+    errors.push(`Contact name has no usable letters: ${data.contact_full_name}`);
   }
   if (data.contact_email && !isValidEmail(data.contact_email)) {
     errors.push(`Invalid contact email: ${data.contact_email}`);

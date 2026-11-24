@@ -83,14 +83,23 @@ export async function insertCandidates(
       .from('candidates')
       .insert(records);
 
-    if (error) {
-      result.failed += batch.length;
-      result.errors.push({
-        row: i,
-        error: error.message,
-      });
-    } else {
+    if (!error) {
       result.imported += batch.length;
+      continue;
+    }
+
+    // Batch rejected. Retry row by row so one bad row cannot discard the rest,
+    // and report the failure against the row it actually came from.
+    for (let j = 0; j < records.length; j++) {
+      const { error: rowError } = await supabase
+        .from('candidates')
+        .insert(records[j]);
+      if (rowError) {
+        result.failed += 1;
+        result.errors.push({ row: batch[j].rowIndex, error: rowError.message });
+      } else {
+        result.imported += 1;
+      }
     }
   }
 

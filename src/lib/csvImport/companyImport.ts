@@ -70,22 +70,39 @@ export async function insertCompanies(
   const createRows = [...toCreate.values()];
   for (let i = 0; i < createRows.length; i += BATCH_SIZE) {
     const batch = createRows.slice(i, i + BATCH_SIZE);
+    const records = batch.map(row => ({
+      name: row.data.name?.trim() || '',
+      industry: row.data.industry?.trim() || null,
+      website: row.data.website?.trim() || null,
+      notes: row.data.notes?.trim() || null,
+      organisation_id: organisationId,
+      created_by: userId,
+    }));
+
     const { data, error } = await supabase
       .from('companies')
-      .insert(batch.map(row => ({
-        name: row.data.name?.trim() || '',
-        industry: row.data.industry?.trim() || null,
-        website: row.data.website?.trim() || null,
-        notes: row.data.notes?.trim() || null,
-        organisation_id: organisationId,
-        created_by: userId,
-      })))
+      .insert(records)
       .select('id, name');
-    if (error) {
-      result.errors.push({ row: batch[0].rowIndex, error: error.message });
+
+    if (!error) {
+      (data || []).forEach(c => companyIds.set(c.name.toLowerCase().trim(), c.id));
       continue;
     }
-    (data || []).forEach(c => companyIds.set(c.name.toLowerCase().trim(), c.id));
+
+    // Batch rejected. Retry row by row so one bad company cannot discard the
+    // rest. Rows left unresolved are counted as failed in the contacts pass.
+    for (let j = 0; j < records.length; j++) {
+      const { data: rowData, error: rowError } = await supabase
+        .from('companies')
+        .insert(records[j])
+        .select('id, name')
+        .single();
+      if (rowError) {
+        result.errors.push({ row: batch[j].rowIndex, error: rowError.message });
+      } else if (rowData) {
+        companyIds.set(rowData.name.toLowerCase().trim(), rowData.id);
+      }
+    }
   }
 
   // 2. Contacts. Rows without a contact count once their company exists.
@@ -102,7 +119,7 @@ export async function insertCompanies(
 
   for (let i = 0; i < contactRows.length; i += BATCH_SIZE) {
     const batch = contactRows.slice(i, i + BATCH_SIZE);
-    const { error } = await supabase.from('contacts').insert(batch.map(row => ({
+    const contactRecords = batch.map(row => ({
       full_name: sanitiseName(row.data.contact_full_name || ''),
       email: row.data.contact_email?.trim().toLowerCase() || null,
       phone: row.data.contact_phone?.trim() || null,
@@ -111,12 +128,27 @@ export async function insertCompanies(
       company_id: companyIds.get(keyOf(row))!,
       organisation_id: organisationId,
       created_by: userId,
-    })));
-    if (error) {
-      result.failed += batch.length;
-      result.errors.push({ row: batch[0].rowIndex, error: error.message });
-    } else {
+    }));
+
+    const { error } = await supabase.from('contacts').insert(contactRecords);
+
+    if (!error) {
       result.imported += batch.length;
+      continue;
+    }
+
+    // Batch rejected. Retry row by row so one bad row cannot discard the rest,
+    // and report the failure against the row it actually came from.
+    for (let j = 0; j < contactRecords.length; j++) {
+      const { error: rowError } = await supabase
+        .from('contacts')
+        .insert(contactRecords[j]);
+      if (rowError) {
+        result.failed += 1;
+        result.errors.push({ row: batch[j].rowIndex, error: rowError.message });
+      } else {
+        result.imported += 1;
+      }
     }
   }
 

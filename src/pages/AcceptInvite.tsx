@@ -34,39 +34,22 @@ export function AcceptInvite() {
     }
   };
 
-  const handleAccept = async (e: React.FormEvent) => {
+    const handleAccept = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!invite || !token) return;
     setSubmitting(true);
     setError('');
 
     try {
-      // 1. Create auth user
-      const { data, error: signUpError } = await supabase.auth.signUp({
+      // The on_auth_user_created trigger reads invite_token, creates the profile
+      // in the inviting organisation with the invited role, and consumes the invite.
+      const { error: signUpError } = await supabase.auth.signUp({
         email: invite.email,
         password,
+        options: { data: { full_name: fullName, invite_token: token } },
       });
       if (signUpError) throw signUpError;
-      if (!data.user) throw new Error('Failed to create account');
 
-      // 2. Create profile linked to the organisation BEFORE auth state fires
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .upsert([{
-          id: data.user.id,
-          full_name: fullName,
-          role: invite.role,
-          organisation_id: invite.organisation_id,
-        }]);
-      if (profileError) throw profileError;
-
-      // 3. Mark invite as accepted
-      await supabase
-        .from('invites')
-        .update({ accepted: true })
-        .eq('token', token);
-
-      // 4. Sign in immediately so auth state has the right user
       const { error: signInError } = await supabase.auth.signInWithPassword({
         email: invite.email,
         password,
@@ -115,7 +98,7 @@ export function AcceptInvite() {
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 mb-1">You're invited!</h1>
           <p className="text-gray-600 text-sm">
-            Join <span className="font-semibold">{invite?.organisation?.name}</span> on SimplyCRM
+            Join <span className="font-semibold">{invite?.organisation_name}</span> on RectoCRM
             as a <span className="font-semibold">{invite?.role}</span>
           </p>
         </div>

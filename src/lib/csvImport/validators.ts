@@ -6,7 +6,7 @@
 // Strip special characters from names
 // Keeps: letters (including accented), spaces, hyphens, apostrophes
 export function sanitiseName(name: string): string {
-  return name.replace(/[^a-zA-ZÀ-ÿ\s\-']/g, '').trim();
+  return name.replace(/[^\p{L}\p{M}\s\-']/gu, '').trim();
 }
 
 // Validate email format
@@ -73,6 +73,17 @@ export function validateCompanyRow(
 ): string[] {
   const errors: string[] = [];
 
+  const hasContact = [
+  data.contact_full_name, data.contact_email, data.contact_phone,
+  data.contact_job_title, data.contact_linkedin_url,
+  ].some(v => v?.trim());
+  if (hasContact && !data.contact_full_name?.trim()) {
+    errors.push('Contact name is required when contact details are given');
+  }
+  if (data.contact_email && !isValidEmail(data.contact_email)) {
+    errors.push(`Invalid contact email: ${data.contact_email}`);
+  }
+
   if (!data.name?.trim()) {
     errors.push('Company name is required');
   }
@@ -88,6 +99,10 @@ export function validateContactRow(
 
   if (!data.full_name?.trim()) {
     errors.push('Name is required');
+  }
+
+  if (!data.company_name?.trim()) {
+    errors.push('Company name is required');
   }
 
   if (data.email && !isValidEmail(data.email)) {

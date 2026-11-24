@@ -5,17 +5,16 @@ import {
   CheckCircle, AlertCircle, SkipForward, Download
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
 import {
   autoDetectMappings, applyMappings,
   validateCandidateRow, validateCompanyRow, validateContactRow,
-  sanitiseName, isValidEmail,
+  fetchAllRows,
   CANDIDATE_CONFIG, COMPANY_CONFIG, CONTACT_CONFIG,
   insertCandidates, insertCompanies, insertContacts,
 } from '../lib/csvImport';
 import type {
   ImportEntityType, ImportStatus, ColumnMapping,
-  ParsedRow, ValidatedRow, ImportResult, ImportConfig,
+  ParsedRow, ValidatedRow, ImportResult, ImportConfig, 
 } from '../lib/csvImport';
 
 const MAX_ROWS = 10000;
@@ -46,7 +45,6 @@ export function ImportModal({ entityType, onClose, onComplete }: ImportModalProp
   const [fileName, setFileName] = useState('');
   const [parseError, setParseError] = useState('');
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
-  const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [mappings, setMappings] = useState<ColumnMapping[]>([]);
   const [validatedRows, setValidatedRows] = useState<ValidatedRow[]>([]);
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
@@ -110,7 +108,6 @@ export function ImportModal({ entityType, onClose, onComplete }: ImportModalProp
         }));
 
         const detectedMappings = autoDetectMappings(headers, config);
-        setCsvHeaders(headers);
         setParsedRows(parsed);
         setMappings(detectedMappings);
         setStatus('mapping');
@@ -151,19 +148,18 @@ export function ImportModal({ entityType, onClose, onComplete }: ImportModalProp
     let existingNames = new Set<string>();
 
     if (entityType === 'candidates' || entityType === 'contacts') {
+      if (!organisation?.id) return;
       const table = entityType === 'candidates' ? 'candidates' : 'contacts';
-      const { data } = await supabase
-        .from(table)
-        .select('email')
-        .not('email', 'is', null);
-      existingEmails = new Set((data || []).map((r: any) => r.email?.toLowerCase()));
+      const existing = await fetchAllRows<{ email: string | null }>(table, 'email', organisation.id);
+      existingEmails = new Set(existing.filter(r => r.email).map(r => r.email!.toLowerCase()));
     }
 
     if (entityType === 'companies') {
-      const { data } = await supabase
-        .from('companies')
-        .select('name');
-      existingNames = new Set((data || []).map((r: any) => r.name?.toLowerCase().trim()));
+      if (!organisation?.id) return;
+      const companies = await fetchAllRows<{ name: string }>('companies', 'name', organisation.id);
+      existingNames = new Set(companies.map(r => r.name.toLowerCase().trim()));
+      const contacts = await fetchAllRows<{ email: string | null }>('contacts', 'email', organisation.id);
+      existingEmails = new Set(contacts.filter(r => r.email).map(r => r.email!.toLowerCase()));
     }
 
     // Validate each row
@@ -178,10 +174,14 @@ export function ImportModal({ entityType, onClose, onComplete }: ImportModalProp
       let isDuplicate = false;
       if (entityType === 'companies') {
         const name = row.mapped.name?.toLowerCase().trim() || '';
-        isDuplicate = name !== '' && existingNames.has(name);
+        const email = row.mapped.contact_email?.toLowerCase().trim() || '';
+        isDuplicate = row.mapped.contact_full_name
+          ? email !== '' && existingEmails.has(email)
+          : name !== '' && existingNames.has(name);
       } else {
         const email = row.mapped.email?.toLowerCase().trim() || '';
         isDuplicate = email !== '' && existingEmails.has(email);
+        if (email !== '') existingEmails.add(email);
       }
 
       return {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import type { Database, CandidateStatus } from '../lib/database.types';
+import type { Database } from '../lib/database.types';
+import type { CandidateStatus } from '../lib/enums';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
 

@@ -4,7 +4,8 @@ import { profilesService } from '../services/tasks';
 import { candidatesService } from '../services/candidates';
 import { companiesService } from '../services/companies';
 import { jobsService } from '../services/jobs';
-import type { Database, TaskStatus, EntityType } from '../lib/database.types';
+import type { Database } from '../lib/database.types';
+import type { TaskStatus, EntityType } from '../lib/enums';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
 

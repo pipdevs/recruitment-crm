@@ -13,7 +13,7 @@ export const CONTACT_CONFIG: ImportConfig = {
     { key: 'email', label: 'Email', required: false },
     { key: 'phone', label: 'Phone', required: false },
     { key: 'job_title', label: 'Job Title', required: false },
-    { key: 'company_name', label: 'Company Name', required: false, description: 'Must match an existing company' },
+    { key: 'company_name', label: 'Company Name', required: true, description: 'Must match an existing company' },
   ],
   columnAliases: {
     'First Name': 'full_name',
@@ -67,25 +67,40 @@ export async function insertContacts(
   });
 
   const validRows = rows.filter(r => r.valid && !r.isDuplicate);
+
+  // contacts.company_id is NOT NULL — resolve every company up front so an
+  // unresolvable row fails on its own instead of taking its batch down with it.
+  const resolved: { row: ValidatedRow; companyId: string }[] = [];
+  validRows.forEach(row => {
+    const companyName = row.data.company_name?.trim() || '';
+    const companyId = companyMap[companyName.toLowerCase()];
+    if (!companyId) {
+      result.failed += 1;
+      result.errors.push({
+        row: row.rowIndex,
+        error: companyName
+          ? `Company "${companyName}" not found`
+          : 'Company Name is required',
+      });
+      return;
+    }
+    resolved.push({ row, companyId });
+  });
+
   const BATCH_SIZE = 50;
 
-  for (let i = 0; i < validRows.length; i += BATCH_SIZE) {
-    const batch = validRows.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < resolved.length; i += BATCH_SIZE) {
+    const batch = resolved.slice(i, i + BATCH_SIZE);
 
-    const records = batch.map(row => {
-      const companyName = row.data.company_name?.toLowerCase().trim() || '';
-      const companyId = companyMap[companyName] || null;
-
-      return {
-        full_name: sanitiseName(row.data.full_name || ''),
-        email: row.data.email?.trim().toLowerCase() || null,
-        phone: row.data.phone?.trim() || null,
-        job_title: row.data.job_title?.trim() || null,
-        company_id: companyId,
-        organisation_id: organisationId,
-        created_by: userId,
-      };
-    });
+    const records = batch.map(({ row, companyId }) => ({
+      full_name: sanitiseName(row.data.full_name || ''),
+      email: row.data.email?.trim().toLowerCase() || null,
+      phone: row.data.phone?.trim() || null,
+      job_title: row.data.job_title?.trim() || null,
+      company_id: companyId,
+      organisation_id: organisationId,
+      created_by: userId,
+    }));
 
     const { error } = await supabase
       .from('contacts')

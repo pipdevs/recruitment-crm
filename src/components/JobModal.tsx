@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { companiesService } from '../services/companies';
-import type { Database, JobStatus } from '../lib/database.types';
+import type { Database } from '../lib/database.types';
+import type { JobStatus } from '../lib/enums';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
 

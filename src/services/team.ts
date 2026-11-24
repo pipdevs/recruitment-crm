@@ -60,12 +60,11 @@ export const teamService = {
     return data;
   },
 
-  async getInviteByToken(token: string) {
+    async getInviteByToken(token: string) {
+    // Reads through the get_invite SECURITY DEFINER function: the invites
+    // table is no longer readable by anon, so a direct select returns nothing.
     const { data, error } = await supabase
-      .from('invites')
-      .select('*, organisation:organisation_id(id, name)')
-      .eq('token', token)
-      .eq('accepted', false)
+      .rpc('get_invite', { invite_token: token })
       .single();
     if (error) throw error;
     return data;

@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 import {
   autoDetectMappings, applyMappings,
   validateCandidateRow, validateCompanyRow, validateContactRow,
-  fetchAllRows,
+  fetchAllRows, linkedInHandle,
   CANDIDATE_CONFIG, COMPANY_CONFIG, CONTACT_CONFIG,
   insertCandidates, insertCompanies, insertContacts,
 } from '../lib/csvImport';
@@ -146,12 +146,18 @@ export function ImportModal({ entityType, onClose, onComplete }: ImportModalProp
     // Check for existing emails/names to detect duplicates
     let existingEmails = new Set<string>();
     let existingNames = new Set<string>();
+    let existingHandles = new Set<string>();
 
     if (entityType === 'candidates' || entityType === 'contacts') {
       if (!organisation?.id) return;
       const table = entityType === 'candidates' ? 'candidates' : 'contacts';
-      const existing = await fetchAllRows<{ email: string | null }>(table, 'email', organisation.id);
+      const existing = await fetchAllRows<{ email: string | null; linkedin_url: string | null }>(
+        table, 'email, linkedin_url', organisation.id,
+      );
       existingEmails = new Set(existing.filter(r => r.email).map(r => r.email!.toLowerCase()));
+      existingHandles = new Set(
+        existing.map(r => linkedInHandle(r.linkedin_url)).filter(h => h !== ''),
+      );
     }
 
     if (entityType === 'companies') {
@@ -180,8 +186,12 @@ export function ImportModal({ entityType, onClose, onComplete }: ImportModalProp
           : name !== '' && existingNames.has(name);
       } else {
         const email = row.mapped.email?.toLowerCase().trim() || '';
-        isDuplicate = email !== '' && existingEmails.has(email);
+        const handle = linkedInHandle(row.mapped.linkedin_url);
+        isDuplicate =
+          (email !== '' && existingEmails.has(email)) ||
+          (handle !== '' && existingHandles.has(handle));
         if (email !== '') existingEmails.add(email);
+        if (handle !== '') existingHandles.add(handle);
       }
 
       return {

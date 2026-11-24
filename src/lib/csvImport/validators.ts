@@ -9,6 +9,14 @@ export function sanitiseName(name: string): string {
   return name.replace(/[^\p{L}\p{M}\s\-']/gu, '').trim();
 }
 
+// Reduce a LinkedIn profile URL to its handle, for duplicate matching.
+// "https://www.LinkedIn.com/in/Jane-Doe/?utm_source=x" -> "jane-doe"
+// Returns '' when there is no handle to match on.
+export function linkedInHandle(url: string | null | undefined): string {
+  const match = url?.trim().toLowerCase().match(/linkedin\.com\/in\/([^/?#]+)/);
+  return match ? match[1] : '';
+}
+
 // Validate email format
 export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());

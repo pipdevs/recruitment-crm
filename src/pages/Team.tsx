@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, Mail, Trash2, Crown, Shield, User, Copy, Check, Plus, X } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { teamService } from '../services/team';
@@ -36,7 +37,8 @@ interface Invite {
 }
 
 export function Team() {
-  const { user, profile, organisation } = useAuth();
+  const { user, profile, organisation, signOut } = useAuth();
+  const navigate = useNavigate();
   const limits = usePlanLimits();
   const [members, setMembers] = useState<Member[]>([]);
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -46,6 +48,7 @@ export function Team() {
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
 
   const isAdmin = profile?.role === 'Admin';
+  const isOnlyAdmin = isAdmin && members.filter(m => m.role === 'Admin').length <= 1;
 
   useEffect(() => {
     if (organisation?.id) load();
@@ -78,11 +81,45 @@ export function Team() {
   };
 
   const handleRoleChange = async (memberId: string, role: string) => {
+    const previous = members;
+    setMembers(members.map(m => m.id === memberId ? { ...m, role } : m));
+    setError('');
     try {
-      await teamService.updateMemberRole(memberId, role);
-      setMembers(members.map(m => m.id === memberId ? { ...m, role } : m));
+      await teamService.setMemberRole(memberId, role);
     } catch (err) {
+      // The RPC refuses demoting the last Admin, cross-organisation targets and
+      // non-Admin callers, so the optimistic update has to be undone.
+      setMembers(previous);
       setError(err instanceof Error ? err.message : 'Failed to update role');
+    }
+  };
+
+  const handleRemoveMember = async (member: Member) => {
+    if (!confirm(
+      `Remove ${member.full_name}? Their account is deleted and they lose access ` +
+      `immediately. Candidates, jobs and tasks they created stay in the system but ` +
+      `become unassigned.`
+    )) return;
+    setError('');
+    try {
+      await teamService.removeMember(member.id);
+      setMembers(members.filter(m => m.id !== member.id));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove member');
+    }
+  };
+
+  const handleLeave = async () => {
+    if (!confirm(
+      `Leave ${organisation?.name}? This deletes your account and cannot be undone.`
+    )) return;
+    setError('');
+    try {
+      await teamService.leaveOrganisation();
+      await signOut();
+      navigate('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to leave organisation');
     }
   };
 
@@ -182,6 +219,15 @@ export function Team() {
                         {member.role}
                       </span>
                     )}
+                    {isAdmin && member.id !== user?.id && (
+                      <button
+                        onClick={() => handleRemoveMember(member)}
+                        title="Remove from organisation"
+                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -240,6 +286,27 @@ export function Team() {
               )}
             </div>
           )}
+
+          {/* Leave organisation */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-900">
+                Leave {organisation?.name}
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {isOnlyAdmin
+                  ? 'You are the only Admin. Promote another member before leaving.'
+                  : 'Deletes your account. This cannot be undone.'}
+              </p>
+            </div>
+            <button
+              onClick={handleLeave}
+              disabled={isOnlyAdmin}
+              className="px-3 py-1.5 text-xs font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              Leave
+            </button>
+          </div>
         </div>
       )}
 
@@ -263,7 +330,7 @@ function InviteModal({ organisationId, invitedBy, onClose, onInvited }: {
   organisationId: string;
   invitedBy: string;
   onClose: () => void;
-  onInvited: (invite: any) => void;
+  onInvited: (invite: Invite) => void;
 }) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('Recruiter');
@@ -276,9 +343,9 @@ function InviteModal({ organisationId, invitedBy, onClose, onInvited }: {
     setError('');
     try {
       const invite = await teamService.sendInvite(organisationId, email, role, invitedBy);
-      onInvited(invite);
-    } catch (err: any) {
-      if (err?.code === '23505') {
+      onInvited(invite as Invite);
+    } catch (err) {
+      if ((err as { code?: string })?.code === '23505') {
         setError('An invite has already been sent to this email.');
       } else {
         setError(err instanceof Error ? err.message : 'Failed to send invite');

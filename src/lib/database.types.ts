@@ -784,6 +784,12 @@ export type Database = {
         }[]
       }
       get_user_organisation_id: { Args: never; Returns: string }
+      leave_organisation: { Args: never; Returns: undefined }
+      remove_member: { Args: { p_member_id: string }; Returns: undefined }
+      set_member_role: {
+        Args: { p_member_id: string; p_role: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

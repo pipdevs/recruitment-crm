@@ -21,6 +21,16 @@ export const companiesService = {
     return data;
   },
 
+    async getById(id: string) {
+    const { data, error } = await supabase
+      .from('companies')
+      .select('*')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
   async create(company: CompanyInsert) {
     const organisation_id = await getOrgId();
     const { data, error } = await supabase

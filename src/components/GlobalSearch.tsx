@@ -35,7 +35,7 @@ const TYPE_ROUTES = {
   candidate: '/candidates',
   company: '/companies',
   job: '/jobs',
-  contact: '/contacts',
+  contact: '/companies',
 };
 
 export function GlobalSearch() {
@@ -92,7 +92,7 @@ export function GlobalSearch() {
         supabase.from('candidates').select('id, full_name, email, status').ilike('full_name', term).limit(4),
         supabase.from('companies').select('id, name, industry').ilike('name', term).limit(4),
         supabase.from('jobs').select('id, title, status').ilike('title', term).limit(4),
-        supabase.from('contacts').select('id, full_name, job_title, company:company_id(name)').ilike('full_name', term).limit(4),
+        supabase.from('contacts').select('id, full_name, job_title, company:company_id(name), company_id').ilike('full_name', term).limit(4),
       ]);
 
       const mapped: SearchResult[] = [
@@ -111,8 +111,7 @@ export function GlobalSearch() {
           title: j.title,
           subtitle: j.status || 'Job',
         })),
-        ...(contacts.data || []).map(c => ({
-          id: c.id, type: 'contact' as const,
+        ...(contacts.data || []).filter(c => c.company_id).map(c => ({ id: c.company_id as string, type: 'contact' as const,
           title: c.full_name,
           subtitle: [c.job_title, (c.company as any)?.name].filter(Boolean).join(' · ') || 'Contact',
         })),

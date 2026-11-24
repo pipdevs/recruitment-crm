@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { Plus, Search, Mail, Phone, Building2, Star, Pencil, Trash2, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { contactsService } from '../services/contacts';
@@ -161,10 +162,13 @@ export function Contacts() {
               </div>
 
               {contact.company && (
-                <div className="flex items-center gap-1.5 text-xs text-gray-600 mb-2">
+                <Link
+                 to={`/companies/${contact.company.id}`}
+                  className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-blue-600 hover:underline mb-2"
+                >
                   <Building2 className="w-3.5 h-3.5" />
                   {contact.company.name}
-                </div>
+                </Link>
               )}
 
               <div className="space-y-1.5 mt-3">

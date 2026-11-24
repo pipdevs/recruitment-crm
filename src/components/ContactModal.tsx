@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import type { Database } from '../lib/database.types';
 
+type Company = { id: string; name: string; website: string | null };
 type ContactInsert = Database['public']['Tables']['contacts']['Insert'];
 type ContactRow = Database['public']['Tables']['contacts']['Row'];
 
@@ -18,9 +19,12 @@ export function ContactModal({ contact, preselectedCompanyId, onSubmit, onClose 
   const [jobTitle, setJobTitle] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
   const [companyId, setCompanyId] = useState('');
+  const [companyQuery, setCompanyQuery] = useState('');
+  const [showCompanies, setShowCompanies] = useState(false);
   const [isPrimary, setIsPrimary] = useState(false);
-  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,6 +34,7 @@ export function ContactModal({ contact, preselectedCompanyId, onSubmit, onClose 
       setJobTitle(contact.job_title || '');
       setEmail(contact.email || '');
       setPhone(contact.phone || '');
+      setLinkedinUrl(contact.linkedin_url || '');
       setCompanyId(contact.company_id || '');
       setIsPrimary(contact.is_primary || false);
     } else if (preselectedCompanyId) {
@@ -39,13 +44,46 @@ export function ContactModal({ contact, preselectedCompanyId, onSubmit, onClose 
   }, [contact, preselectedCompanyId]);
 
   const loadCompanies = async () => {
-    const { data } = await supabase.from('companies').select('id, name').order('name');
+    const { data } = await supabase.from('companies').select('id, name, website').order('name');
     setCompanies(data || []);
+  };
+
+  // Show the selected company's name in the input (covers edit + preselect).
+  useEffect(() => {
+    const selected = companies.find(c => c.id === companyId);
+    if (selected) setCompanyQuery(selected.name);
+  }, [companyId, companies]);
+
+  const hostOf = (url: string) =>
+    url.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+
+  // Match the email's domain against company websites. Only fills on a single
+  // unambiguous match — two companies sharing a domain leaves it to the user.
+  const autofillCompanyFromEmail = () => {
+    if (companyId || preselectedCompanyId) return;
+    const domain = email.split('@')[1]?.trim().toLowerCase();
+    if (!domain) return;
+    const matches = companies.filter(c => c.website && hostOf(c.website) === domain);
+    if (matches.length === 1) setCompanyId(matches[0].id);
+  };
+
+  const filteredCompanies = companyQuery.trim()
+    ? companies.filter(c => c.name.toLowerCase().includes(companyQuery.trim().toLowerCase()))
+    : companies;
+
+  const selectCompany = (c: Company) => {
+    setCompanyId(c.id);
+    setCompanyQuery(c.name);
+    setShowCompanies(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!companyId) {
+      setError('Select a company from the list');
+      return;
+    }
     setLoading(true);
     try {
       await onSubmit({
@@ -53,7 +91,8 @@ export function ContactModal({ contact, preselectedCompanyId, onSubmit, onClose 
         job_title: jobTitle || null,
         email: email || null,
         phone: phone || null,
-        company_id: companyId || null,
+        linkedin_url: linkedinUrl || null,
+        company_id: companyId,
         is_primary: isPrimary,
         created_by: contact?.created_by || null,
       });
@@ -113,6 +152,7 @@ export function ContactModal({ contact, preselectedCompanyId, onSubmit, onClose 
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onBlur={autofillCompanyFromEmail}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="jane@company.com"
             />
@@ -130,17 +170,60 @@ export function ContactModal({ contact, preselectedCompanyId, onSubmit, onClose 
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Company</label>
-            <select
-              value={companyId}
-              onChange={(e) => setCompanyId(e.target.value)}
+            <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn</label>
+            <input
+              type="url"
+              value={linkedinUrl}
+              onChange={(e) => setLinkedinUrl(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select company...</option>
-              {companies.map((c) => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              placeholder="https://linkedin.com/in/jane-smith"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Company *</label>
+            <div className="relative">
+              <input
+                type="text"
+                value={companyQuery}
+                onChange={(e) => { setCompanyQuery(e.target.value); setCompanyId(''); setShowCompanies(true); }}
+                onFocus={() => setShowCompanies(true)}
+                onBlur={() => setShowCompanies(false)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') setShowCompanies(false);
+                  if (e.key === 'Enter' && showCompanies && filteredCompanies.length > 0) {
+                    e.preventDefault();
+                    selectCompany(filteredCompanies[0]);
+                  }
+                }}
+                disabled={!!preselectedCompanyId}
+                autoComplete="off"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-600"
+                placeholder="Search companies..."
+              />
+              {showCompanies && !preselectedCompanyId && (
+                <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto bg-white border border-gray-200 rounded-lg shadow-lg">
+                  {filteredCompanies.length === 0 ? (
+                    <li className="px-3 py-2 text-sm text-gray-500">No companies match</li>
+                  ) : (
+                    filteredCompanies.map((c) => (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          onMouseDown={(e) => e.preventDefault()}
+                          onClick={() => selectCompany(c)}
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-blue-50 ${
+                            c.id === companyId ? 'bg-blue-50 font-medium text-blue-700' : 'text-gray-700'
+                          }`}
+                        >
+                          {c.name}
+                        </button>
+                      </li>
+                    ))
+                  )}
+                </ul>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-2">

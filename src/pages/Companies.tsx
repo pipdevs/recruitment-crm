@@ -7,6 +7,7 @@ import { ActivityPanel } from '../components/ActivityPanel';
 import { companiesService } from '../services/companies';
 import type { Database } from '../lib/database.types';
 import { ImportModal } from '../components/ImportModal';
+import { CompanyContacts } from '../components/CompanyContacts';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 
@@ -186,9 +187,7 @@ export function CompanyDetail() {
   const loadCompany = async (companyId: string) => {
     try {
       setLoading(true);
-      const data = await companiesService.getAll();
-      const found = (data || []).find(c => c.id === companyId);
-      if (found) setCompany(found);
+      setCompany(await companiesService.getById(companyId));
     } catch (err) {
       console.error('Failed to load company:', err);
     } finally {
@@ -204,7 +203,7 @@ export function CompanyDetail() {
   };
 
   const handleDelete = async () => {
-    if (!company || !confirm('Are you sure you want to delete this company?')) return;
+    if (!company || !confirm('Are you sure you want to delete this company and all its contacts?')) return;
     await companiesService.delete(company.id);
     navigate('/companies');
   };
@@ -235,7 +234,7 @@ export function CompanyDetail() {
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -283,6 +282,7 @@ export function CompanyDetail() {
               ) : null}
             </div>
           </div>
+          <CompanyContacts companyId={company.id} />
         </div>
 
         <div className="lg:col-span-2">

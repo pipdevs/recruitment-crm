@@ -3,8 +3,11 @@
 // Add new validators here. Each returns an error string or null.
 // ============================================================
 
-// Strip special characters from names
-// Keeps: letters (including accented), spaces, hyphens, apostrophes
+export const CANDIDATE_SOURCES: string[] = [
+  'LinkedIn Application', 'LinkedIn Outreach', 'Direct', 'Referral', 'Job Board', 'Website', 'Other',
+];
+
+// Strip special characters from names// Keeps: letters (including accented), spaces, hyphens, apostrophes
 export function sanitiseName(name: string): string {
   return name.replace(/[^\p{L}\p{M}\s\-']/gu, '').trim();
 }
@@ -74,6 +77,10 @@ export function validateCandidateRow(
 
   if (data.email && !isValidEmail(data.email)) {
     errors.push(`Invalid email: ${data.email}`);
+  }
+
+  if (data.source?.trim() && !CANDIDATE_SOURCES.includes(data.source.trim())) {
+    errors.push(`Invalid source: ${data.source}`);
   }
 
   return errors;

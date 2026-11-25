@@ -3,7 +3,7 @@
 // ============================================================
 
 import { supabase } from '../../lib/supabase';
-import { sanitiseName } from './validators';
+import { sanitiseName, CANDIDATE_SOURCES } from './validators';
 import type { ImportConfig, ValidatedRow, ImportResult } from './types';
 
 export const CANDIDATE_CONFIG: ImportConfig = {
@@ -14,6 +14,7 @@ export const CANDIDATE_CONFIG: ImportConfig = {
     { key: 'phone', label: 'Phone', required: false },
     { key: 'linkedin_url', label: 'LinkedIn URL', required: false },
     { key: 'status', label: 'Status', required: false, description: 'New, Screening, Interview, Offer, Hired, Rejected' },
+    { key: 'source', label: 'Source', required: false, description: CANDIDATE_SOURCES.join(', ') },
   ],
   columnAliases: {
     // Name variations
@@ -43,6 +44,9 @@ export const CANDIDATE_CONFIG: ImportConfig = {
     'Stage': 'status',
     'Pipeline Stage': 'status',
     'Status': 'status',
+    // Source
+    'Source': 'source',
+    'Candidate Source': 'source',
   },
 };
 
@@ -75,6 +79,7 @@ export async function insertCandidates(
       status: VALID_STATUSES.includes(row.data.status || '')
         ? row.data.status
         : 'New',
+      source: row.data.source?.trim() || null,
       organisation_id: organisationId,
       created_by: userId,
     }));

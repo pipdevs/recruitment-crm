@@ -4,6 +4,7 @@ import type { Database } from '../lib/database.types';
 import type { CandidateStatus } from '../lib/enums';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
+export type CandidateFormData = Pick<Candidate, 'full_name' | 'email' | 'phone' | 'linkedin_url' | 'resume_url' | 'status'>;
 
 const STATUSES: CandidateStatus[] = ['New', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
 
@@ -11,7 +12,7 @@ interface CandidateModalProps {
   isOpen: boolean;
   candidate?: Candidate;
   onClose: () => void;
-  onSubmit: (data: Omit<Candidate, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onSubmit: (data: CandidateFormData) => Promise<void>;
 }
 
 export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: CandidateModalProps) {
@@ -56,9 +57,6 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
       linkedin_url: linkedinUrl || null,
       resume_url: resumeUrl || null,
       status,
-      created_by: candidate?.created_by || null,
-      assigned_to: candidate?.assigned_to || null,
-      organisation_id: null,
     });
     onClose();
   } catch (err) {

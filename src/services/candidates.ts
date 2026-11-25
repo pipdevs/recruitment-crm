@@ -12,8 +12,29 @@ const getOrgId = async () => {
 };
 
 export const candidatesService = {
-  async getAll() {
+  async getById(id: string) {
     const { data, error } = await supabase
+      .from('candidates')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  // One page of candidates matching the search (see search_candidates in the database), plus the total number of matches.
+  async search(term: string, page: number, pageSize: number) {
+    const from = page * pageSize;
+    const { data, error, count } = await supabase
+      .rpc('search_candidates', { p_term: term }, { count: 'exact' })
+      .order('full_name')
+      .order('id')
+      .range(from, from + pageSize - 1);
+    if (error) throw error;
+    return { candidates: data, total: count ?? 0 };
+  },
+
+  async getAll() {    const { data, error } = await supabase
       .from('candidates')
       .select('*')
       .order('full_name');

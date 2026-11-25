@@ -90,6 +90,70 @@ export type Database = {
           },
         ]
       }
+      candidate_documents: {
+        Row: {
+          byte_size: number
+          candidate_id: string
+          content_text: string | null
+          created_at: string
+          created_by: string | null
+          file_name: string
+          id: string
+          mime_type: string
+          organisation_id: string
+          sha256: string
+          storage_path: string
+        }
+        Insert: {
+          byte_size: number
+          candidate_id: string
+          content_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name: string
+          id?: string
+          mime_type: string
+          organisation_id: string
+          sha256: string
+          storage_path: string
+        }
+        Update: {
+          byte_size?: number
+          candidate_id?: string
+          content_text?: string | null
+          created_at?: string
+          created_by?: string | null
+          file_name?: string
+          id?: string
+          mime_type?: string
+          organisation_id?: string
+          sha256?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_documents_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_documents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "candidate_documents_organisation_id_fkey"
+            columns: ["organisation_id"]
+            isOneToOne: false
+            referencedRelation: "organisations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       candidates: {
         Row: {
           assigned_to: string | null
@@ -102,6 +166,7 @@ export type Database = {
           organisation_id: string | null
           phone: string | null
           resume_url: string | null
+          source: string | null
           status: string | null
           updated_at: string | null
         }
@@ -116,6 +181,7 @@ export type Database = {
           organisation_id?: string | null
           phone?: string | null
           resume_url?: string | null
+          source?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -130,6 +196,7 @@ export type Database = {
           organisation_id?: string | null
           phone?: string | null
           resume_url?: string | null
+          source?: string | null
           status?: string | null
           updated_at?: string | null
         }
@@ -784,6 +851,16 @@ export type Database = {
         }[]
       }
       get_user_organisation_id: { Args: never; Returns: string }
+      search_candidates: {
+        Args: { p_term: string }
+        Returns: Database["public"]["Tables"]["candidates"]["Row"][]
+        SetofOptions: {
+          from: "*"
+          to: "candidates"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       leave_organisation: { Args: never; Returns: undefined }
       remove_member: { Args: { p_member_id: string }; Returns: undefined }
       set_member_role: {

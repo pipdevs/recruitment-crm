@@ -89,7 +89,7 @@ export function GlobalSearch() {
     try {
       const term = `%${q}%`;
       const [candidates, companies, jobs, contacts] = await Promise.all([
-        supabase.from('candidates').select('id, full_name, email, status').ilike('full_name', term).limit(4),
+        supabase.rpc('search_candidates', { p_term: q }).select('id, full_name, email, status').order('full_name').limit(4),
         supabase.from('companies').select('id, name, industry').ilike('name', term).limit(4),
         supabase.from('jobs').select('id, title, status').ilike('title', term).limit(4),
         supabase.from('contacts').select('id, full_name, job_title, company:company_id(name), company_id').ilike('full_name', term).limit(4),

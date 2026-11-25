@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Users, Edit2, Trash2, Plus, Mail, Phone, Linkedin, List, Columns, Upload } from 'lucide-react';
+import { Users, Edit2, Trash2, Plus, Mail, Phone, Linkedin, List, Columns, Upload, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CandidateModal } from '../components/CandidateModal';
+import { CandidateModal, type CandidateFormData } from '../components/CandidateModal';
+import { CandidateDocuments } from '../components/CandidateDocuments';
 import { PipelineView } from '../components/PipelineView';
 import { ActivityPanel } from '../components/ActivityPanel';
 import { candidatesService } from '../services/candidates';
@@ -24,6 +25,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 const STATUSES = ['New', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'] as const;
+const PAGE_SIZE = 50;
 
 // ── List View ─────────────────────────────────────────────
 export function CandidateList() {
@@ -37,28 +39,41 @@ export function CandidateList() {
   const [modalOpen, setModalOpen] = useState(false);
   const limits = usePlanLimits();
   const [showImport, setShowImport] = useState(false);
+  const [query, setQuery] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [page, setPage] = useState(0);
+  const [total, setTotal] = useState(0);
+  const [reloadKey, setReloadKey] = useState(0);
+  const reload = () => setReloadKey(k => k + 1);
 
-  useEffect(() => { loadCandidates(); }, []);
+  // Wait for a pause in typing before searching, and start again from the first page.
+  useEffect(() => {
+    const timer = setTimeout(() => { setSearchTerm(query.trim()); setPage(0); }, 300);
+    return () => clearTimeout(timer);
+  }, [query]);
 
-  const loadCandidates = async () => {
-    try {
-      setLoading(true);
-      const data = await candidatesService.getAll();
-      setCandidates(data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load candidates');
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    let current = true;  // ignore responses that arrive after a newer search has started
+    setLoading(true);
+    candidatesService.search(searchTerm, page, PAGE_SIZE)
+      .then(result => {
+        if (!current) return;
+        setCandidates(result.candidates);
+        setTotal(result.total);
+        setError('');
+      })
+      .catch(err => { if (current) setError(err instanceof Error ? err.message : 'Failed to load candidates'); })
+      .finally(() => { if (current) setLoading(false); });
+    return () => { current = false; };
+  }, [searchTerm, page, reloadKey]);
 
-  const handleCreate = async (data: Omit<Candidate, 'id' | 'created_at' | 'updated_at'>) => {
-    const newCandidate = await candidatesService.create({ ...data, created_by: user?.id || null });
-    setCandidates([newCandidate, ...candidates]);
+  const handleCreate = async (data: CandidateFormData) => {
+    await candidatesService.create({ ...data, created_by: user?.id || null });
+    reload();
     setModalOpen(false);
   };
 
-  const handleUpdate = async (data: Omit<Candidate, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleUpdate = async (data: CandidateFormData) => {
     if (!selectedCandidate) return;
     const updated = await candidatesService.update(selectedCandidate.id, data);
     setCandidates(candidates.map(c => c.id === updated.id ? updated : c));
@@ -69,19 +84,11 @@ export function CandidateList() {
     if (!confirm('Are you sure you want to delete this candidate?')) return;
     try {
       await candidatesService.delete(id);
-      setCandidates(candidates.filter(c => c.id !== id));
+      reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete candidate');
     }
   };
-
-  if (loading) {
-    return (
-      <div className="p-8 flex justify-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-8">
@@ -134,7 +141,26 @@ export function CandidateList() {
         </div>
       )}
 
-      {candidates.length === 0 ? (
+      <div className="relative mb-6">
+        <Search className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <input
+          type="search"
+          value={query}
+          onChange={e => setQuery(e.target.value)}
+          placeholder="Search by name or email"
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        />
+      </div>
+
+      {loading && candidates.length === 0 ? (
+        <div className="flex justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : candidates.length === 0 && searchTerm ? (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center text-gray-600">
+          No candidates match “{searchTerm}”.
+        </div>
+      ) : candidates.length === 0 ? (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
           <div className="bg-blue-100 p-4 rounded-full mb-4 inline-block">
             <Users className="w-8 h-8 text-blue-600" />
@@ -205,6 +231,30 @@ export function CandidateList() {
         </div>
       )}
 
+      {total > PAGE_SIZE && (
+        <div className="flex items-center justify-between mt-6 text-sm text-gray-600">
+          <span>
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total.toLocaleString()}
+          </span>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setPage(p => p - 1)}
+              disabled={page === 0 || loading}
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white"
+            >
+              <ChevronLeft className="w-4 h-4" /> Previous
+            </button>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={(page + 1) * PAGE_SIZE >= total || loading}
+              className="flex items-center gap-1 px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white"
+            >
+              Next <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <CandidateModal
         isOpen={modalOpen}
         candidate={selectedCandidate}
@@ -215,7 +265,7 @@ export function CandidateList() {
         <ImportModal
           entityType="candidates"
           onClose={() => setShowImport(false)}
-          onComplete={loadCandidates}
+          onComplete={reload}
         />
       )}
     </div>
@@ -239,9 +289,7 @@ export function CandidateDetail() {
   const loadCandidate = async (candidateId: string) => {
     try {
       setLoading(true);
-      const data = await candidatesService.getAll();
-      const found = (data || []).find(c => c.id === candidateId);
-      if (found) setCandidate(found);
+      setCandidate(await candidatesService.getById(candidateId));
     } catch (err) {
       console.error('Failed to load candidate:', err);
     } finally {
@@ -249,7 +297,7 @@ export function CandidateDetail() {
     }
   };
 
-  const handleUpdate = async (data: Omit<Candidate, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleUpdate = async (data: CandidateFormData) => {
     if (!candidate) return;
     const updated = await candidatesService.update(candidate.id, data);
     setCandidate(updated);
@@ -305,7 +353,7 @@ export function CandidateDetail() {
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 space-y-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-start justify-between mb-4">
               <div className="w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -363,6 +411,7 @@ export function CandidateDetail() {
               )}
             </div>
           </div>
+          <CandidateDocuments candidateId={candidate.id} />
         </div>
 
         <div className="lg:col-span-2">

@@ -4,28 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { jobApplicationsService } from '../services/jobApplications';
 import { CandidatePicker } from '../components/CandidatePicker';
 import { supabase } from '../lib/supabase';
-
-type ApplicationStage = 'Applied' | 'Screening' | 'Interview' | 'Offer' | 'Placed' | 'Rejected';
+import { ApplicationStage, PIPELINE_DOT_COLORS, pipelineBadgeClass } from '../lib/enums';
 
 const STAGES: ApplicationStage[] = ['Applied', 'Screening', 'Interview', 'Offer', 'Placed', 'Rejected'];
-
-const STAGE_COLORS: Record<ApplicationStage, string> = {
-  Applied: 'bg-gray-100 text-gray-700',
-  Screening: 'bg-blue-100 text-blue-700',
-  Interview: 'bg-yellow-100 text-yellow-700',
-  Offer: 'bg-purple-100 text-purple-700',
-  Placed: 'bg-green-100 text-green-700',
-  Rejected: 'bg-red-100 text-red-700',
-};
-
-const STAGE_BAR_COLORS: Record<ApplicationStage, string> = {
-  Applied: 'bg-gray-400',
-  Screening: 'bg-blue-500',
-  Interview: 'bg-yellow-500',
-  Offer: 'bg-purple-500',
-  Placed: 'bg-green-500',
-  Rejected: 'bg-red-500',
-};
 
 interface Application {
   id: string;
@@ -219,7 +200,7 @@ function BoardView({ stages, byStage, onStageChange, onDelete }: {
           <div key={stage} className="flex-shrink-0 w-72">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${STAGE_BAR_COLORS[stage]}`} />
+                <div className={`w-2.5 h-2.5 rounded-full ${PIPELINE_DOT_COLORS[stage]}`} />
                 <h3 className="font-semibold text-gray-700 text-sm">{stage}</h3>
               </div>
               <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
@@ -290,7 +271,7 @@ function ApplicationCard({ app, stages, onStageChange, onDelete }: {
       <select
         value={app.stage}
         onChange={(e) => onStageChange(app.id, e.target.value as ApplicationStage)}
-        className={`w-full text-xs px-2 py-1.5 rounded-lg border-0 font-medium cursor-pointer ${STAGE_COLORS[app.stage as ApplicationStage]}`}
+        className={`w-full text-xs px-2 py-1.5 rounded-lg border-0 font-medium cursor-pointer ${pipelineBadgeClass(app.stage)}`}
       >
         {stages.map(s => <option key={s} value={s}>{s}</option>)}
       </select>
@@ -347,7 +328,7 @@ function ListView({ applications, onStageChange, onDelete }: {
                 <select
                   value={app.stage}
                   onChange={(e) => onStageChange(app.id, e.target.value as ApplicationStage)}
-                  className={`text-xs px-2 py-1.5 rounded-lg border-0 font-medium cursor-pointer ${STAGE_COLORS[app.stage as ApplicationStage]}`}
+                  className={`text-xs px-2 py-1.5 rounded-lg border-0 font-medium cursor-pointer ${pipelineBadgeClass(app.stage)}`}
                 >
                   {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>

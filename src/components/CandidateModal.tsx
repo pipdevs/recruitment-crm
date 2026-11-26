@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import type { Database } from '../lib/database.types';
-import type { CandidateStatus } from '../lib/enums';
+import { CANDIDATE_STATUSES, type CandidateStatus } from '../lib/enums';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
 export type CandidateFormData = Pick<Candidate, 'full_name' | 'email' | 'phone' | 'linkedin_url' | 'status'>;
-
-const STATUSES: CandidateStatus[] = ['New', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
 
 interface CandidateModalProps {
   isOpen: boolean;
@@ -146,7 +144,7 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
               onChange={(e) => setStatus(e.target.value as CandidateStatus)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {STATUSES.map((s) => (
+              {CANDIDATE_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>

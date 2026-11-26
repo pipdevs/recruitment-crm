@@ -5,6 +5,7 @@
 import { supabase } from '../../lib/supabase';
 import { sanitiseName, CANDIDATE_SOURCES } from './validators';
 import type { ImportConfig, ValidatedRow, ImportResult } from './types';
+import { isCandidateStatus } from '../enums';
 
 export const CANDIDATE_CONFIG: ImportConfig = {
   entityType: 'candidates',
@@ -50,8 +51,6 @@ export const CANDIDATE_CONFIG: ImportConfig = {
   },
 };
 
-const VALID_STATUSES = ['New', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
-
 export async function insertCandidates(
   rows: ValidatedRow[],
   organisationId: string,
@@ -76,9 +75,7 @@ export async function insertCandidates(
       email: row.data.email?.trim().toLowerCase() || null,
       phone: row.data.phone?.trim() || null,
       linkedin_url: row.data.linkedin_url?.trim() || null,
-      status: VALID_STATUSES.includes(row.data.status || '')
-        ? row.data.status
-        : 'New',
+      status: isCandidateStatus(row.data.status) ? row.data.status : 'New',
       source: row.data.source?.trim() || null,
       organisation_id: organisationId,
       created_by: userId,

@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Users, Edit2, Trash2, Plus, Mail, Phone, Linkedin, List, Columns, Upload, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Users, Edit2, Trash2, Plus, Mail, Phone, Linkedin, Upload, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CandidateModal, type CandidateFormData } from '../components/CandidateModal';
 import { CandidateDocuments } from '../components/CandidateDocuments';
-import { PipelineView } from '../components/PipelineView';
 import { ActivityPanel } from '../components/ActivityPanel';
 import { candidatesService } from '../services/candidates';
 import { activitiesService } from '../services/activities';
@@ -12,26 +11,16 @@ import type { Database } from '../lib/database.types';
 import { usePlanLimits } from '../hooks/usePlanLimits';
 import { UpgradePrompt } from '../components/UpgradePrompt';
 import { ImportModal } from '../components/ImportModal';
+import { CANDIDATE_STATUSES, pipelineBadgeClass, type CandidateStatus } from '../lib/enums';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
 
-const STATUS_COLORS: Record<string, string> = {
-  New: 'bg-gray-100 text-gray-800',
-  Screening: 'bg-blue-100 text-blue-800',
-  Interview: 'bg-purple-100 text-purple-800',
-  Offer: 'bg-green-100 text-green-800',
-  Hired: 'bg-emerald-100 text-emerald-800',
-  Rejected: 'bg-red-100 text-red-800',
-};
-
-const STATUSES = ['New', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'] as const;
 const PAGE_SIZE = 50;
 
 // ── List View ─────────────────────────────────────────────
 export function CandidateList() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [viewMode, setViewMode] = useState<'list' | 'pipeline'>('list');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [selectedCandidate, setSelectedCandidate] = useState<Candidate | undefined>();
   const [loading, setLoading] = useState(true);
@@ -98,24 +87,6 @@ export function CandidateList() {
           <p className="text-gray-600">Manage your candidate pipeline</p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('list')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                viewMode === 'list' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <List className="w-4 h-4" /> List
-            </button>
-            <button
-              onClick={() => setViewMode('pipeline')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-md transition-colors ${
-                viewMode === 'pipeline' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <Columns className="w-4 h-4" /> Pipeline
-            </button>
-          </div>
           <button
             onClick={() => setShowImport(true)}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
@@ -170,13 +141,6 @@ export function CandidateList() {
             Start building your candidate database by adding new candidates to your pipeline.
           </p>
         </div>
-      ) : viewMode === 'pipeline' ? (
-        <PipelineView
-          candidates={candidates}
-          onCandidateClick={(c) => navigate(`/candidates/${c.id}`)}
-          onEdit={(c) => { setSelectedCandidate(c); setModalOpen(true); }}
-          onDelete={(id) => handleDelete(id)}
-        />
       ) : (
         <div className="grid gap-4">
           {candidates.map((candidate) => (
@@ -189,7 +153,7 @@ export function CandidateList() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-lg font-semibold text-gray-900">{candidate.full_name}</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${candidate.status ? STATUS_COLORS[candidate.status] : ''}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${pipelineBadgeClass(candidate.status)}`}>
                       {candidate.status}
                     </span>
                   </div>
@@ -311,15 +275,15 @@ export function CandidateDetail() {
     navigate('/candidates');
   };
 
-  const handleStatusChange = async (newStatus: typeof STATUSES[number]) => {
+  const handleStatusChange = async (newStatus: CandidateStatus) => {
     if (!candidate) return;
-    const previousStatus = candidate.status ?? 'New';
+    const previousStatus = candidate.status;
     setStatusUpdating(true);
     setStatusError('');
     try {
       setCandidate(await candidatesService.updateStatus(candidate.id, newStatus));
       if (user) {
-        await activitiesService.createStageMove(
+        await activitiesService.createStatusChange(
           'candidate', candidate.id,
           previousStatus, newStatus, user.id
         );
@@ -379,12 +343,12 @@ export function CandidateDetail() {
 
             <div className="mb-4">
               <select
-                value={candidate.status ?? 'New'}
-                onChange={e => handleStatusChange(e.target.value as any)}
+                value={candidate.status}
+                onChange={e => handleStatusChange(e.target.value as CandidateStatus)}
                 disabled={statusUpdating}
-                className={`w-full px-3 py-2 border-0 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 ${candidate.status ? STATUS_COLORS[candidate.status] : ''}`}
+                className={`w-full px-3 py-2 border-0 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 ${pipelineBadgeClass(candidate.status)}`}
               >
-                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                {CANDIDATE_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
               {statusError && <p className="mt-2 text-sm text-red-600">{statusError}</p>}
             </div>

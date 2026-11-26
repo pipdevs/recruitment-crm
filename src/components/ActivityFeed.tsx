@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { MessageSquare, CheckCircle2, ArrowRight, FileText, Loader2 } from 'lucide-react';
 import { activitiesService, type EntityType } from '../services/activities';
 import type { Json } from '../lib/database.types';
+import { pipelineBadgeClass } from '../lib/enums';
 
 interface Activity {
   id: string;
@@ -143,29 +144,14 @@ export function ActivityFeed({ entityType, entityId }: ActivityFeedProps) {
                 </div>
               );
             }
-            if (activity.activity_type === 'status_changed') {
+            if (activity.activity_type === 'status_changed' || activity.activity_type === 'stage_moved') {
+              const from = String(meta.old_status ?? meta.old_stage);
+              const to = String(meta.new_status ?? meta.new_stage);
               return (
                 <div className="mt-2 text-xs text-gray-600">
-                  <span className="inline-block px-2 py-1 bg-red-100 text-red-800 rounded mr-2">
-                    {String(meta.old_status)}
-                  </span>
+                  <span className={`inline-block px-2 py-1 rounded mr-2 ${pipelineBadgeClass(from)}`}>{from}</span>
                   <span className="inline-block">→</span>
-                  <span className="inline-block px-2 py-1 bg-green-100 text-green-800 rounded ml-2">
-                    {String(meta.new_status)}
-                  </span>
-                </div>
-              );
-            }
-            if (activity.activity_type === 'stage_moved') {
-              return (
-                <div className="mt-2 text-xs text-gray-600">
-                  <span className="inline-block px-2 py-1 bg-purple-100 text-purple-800 rounded mr-2">
-                    {String(meta.old_stage)}
-                  </span>
-                  <span className="inline-block">→</span>
-                  <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 rounded ml-2">
-                    {String(meta.new_stage)}
-                  </span>
+                  <span className={`inline-block px-2 py-1 rounded ml-2 ${pipelineBadgeClass(to)}`}>{to}</span>
                 </div>
               );
             }

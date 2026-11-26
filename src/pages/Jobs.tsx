@@ -9,6 +9,7 @@ import { activitiesService } from '../services/activities';
 import type { Database } from '../lib/database.types';
 import { usePlanLimits } from '../hooks/usePlanLimits';
 import { UpgradePrompt } from '../components/UpgradePrompt';
+import { JobPipeline } from '../components/JobPipeline';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
 
@@ -183,6 +184,7 @@ export function JobDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  // Typed in Phase B, once jobs.status is not null and JobModal takes the loaded shape.
   const [job, setJob] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
@@ -195,9 +197,7 @@ export function JobDetail() {
   const loadJob = async (jobId: string) => {
     try {
       setLoading(true);
-      const data = await jobsService.getAll();
-      const found = (data || []).find(j => j.id === jobId);
-      if (found) setJob(found);
+      setJob(await jobsService.getById(jobId));
     } catch (err) {
       console.error('Failed to load job:', err);
     } finally {
@@ -207,8 +207,9 @@ export function JobDetail() {
 
   const handleUpdate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
     if (!job) return;
-    const updated = await jobsService.update(job.id, data);
-    setJob(updated);
+    await jobsService.update(job.id, data);
+    // Reload rather than use the update's result, which has no company.
+    setJob(await jobsService.getById(job.id));
     setModalOpen(false);
   };
 
@@ -222,13 +223,14 @@ export function JobDetail() {
     if (!job) return;
     setStatusUpdating(true);
     try {
+      // Update first, so a rejected change logs nothing.
+      await jobsService.updateStatus(job.id, newStatus);
       if (user) {
         await activitiesService.createStatusChange(
           'job', job.id, job.status, newStatus, user.id
         );
       }
-      const updated = await jobsService.updateStatus(job.id, newStatus);
-      setJob(updated);
+      setJob({ ...job, status: newStatus });
     } finally {
       setStatusUpdating(false);
     }
@@ -258,6 +260,10 @@ export function JobDetail() {
       <button onClick={() => navigate('/jobs')} className="mb-6 text-blue-600 hover:text-blue-700 font-medium">
         ← Back to Jobs
       </button>
+
+      <div className="mb-6">
+        <JobPipeline jobId={job.id} jobTitle={job.title} />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-1">

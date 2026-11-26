@@ -19,7 +19,10 @@ export const CANDIDATE_STATUSES: CandidateStatus[] = ['New', 'Contacted', 'Activ
 export function isCandidateStatus(value: string | null | undefined): value is CandidateStatus {
   return value != null && (CANDIDATE_STATUSES as string[]).includes(value);
 }
+
+// Progress on one job. A candidate has one of these per job they're on.
 export type ApplicationStage = 'Applied' | 'Screening' | 'Interview' | 'Offer' | 'Placed' | 'Rejected';
+export const APPLICATION_STAGES: ApplicationStage[] = ['Applied', 'Screening', 'Interview', 'Offer', 'Placed', 'Rejected'];
 export type JobStatus = 'Open' | 'Closed' | 'On Hold';
 export type TaskStatus = 'Pending' | 'In Progress' | 'Completed';
 export type EntityType = 'candidate' | 'company' | 'job';

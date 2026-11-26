@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { getOrganisationId } from '../lib/organisation';
+import { activitiesService } from './activities';
 import type { Database } from '../lib/database.types';
 
 type JobApplicationInsert = Database['public']['Tables']['job_applications']['Insert'];
@@ -50,7 +51,7 @@ export const jobApplicationsService = {
   },
 
   async create(application: JobApplicationInsert) {
-    const organisation_id = await await getOrganisationId();
+    const organisation_id = await getOrganisationId();
     const { data, error } = await supabase
       .from('job_applications')
       .insert([{ ...application, organisation_id }])
@@ -60,15 +61,19 @@ export const jobApplicationsService = {
     return data;
   },
 
-  async updateStage(id: string, stage: string) {
-    const { data, error } = await supabase
+  // Updates first, then logs on the candidate, so a rejected update records nothing.
+  async updateStage(
+    application: { id: string; candidate_id: string; stage: string },
+    stage: string,
+    jobTitle: string,
+    authorId: string
+  ) {
+    const { error } = await supabase
       .from('job_applications')
       .update({ stage, updated_at: new Date().toISOString() })
-      .eq('id', id)
-      .select()
-      .single();
+      .eq('id', application.id);
     if (error) throw error;
-    return data;
+    await activitiesService.createStageMove(application.candidate_id, jobTitle, application.stage, stage, authorId);
   },
 
   async update(id: string, updates: JobApplicationUpdate) {

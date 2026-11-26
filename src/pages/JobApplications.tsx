@@ -1,27 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Plus, Search, ChevronRight, Briefcase, User, Building2, Trash2 } from 'lucide-react';
+import { Plus, Search, ChevronRight, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { jobApplicationsService } from '../services/jobApplications';
 import { CandidatePicker } from '../components/CandidatePicker';
 import { supabase } from '../lib/supabase';
-import { ApplicationStage, PIPELINE_DOT_COLORS, pipelineBadgeClass } from '../lib/enums';
+import { APPLICATION_STAGES, pipelineBadgeClass, type ApplicationStage } from '../lib/enums';
+import { ApplicationBoard } from '../components/ApplicationBoard';
 
-const STAGES: ApplicationStage[] = ['Applied', 'Screening', 'Interview', 'Offer', 'Placed', 'Rejected'];
-
-interface Application {
-  id: string;
-  stage: string;
-  notes: string | null;
-  applied_at: string | null;
-  created_at: string | null;
-  candidate_id: string;
-  job_id: string;
-  candidate?: { id: string; full_name: string; email: string | null; status: string | null } | null;
-  job?: {
-    id: string; title: string;
-    company?: { id: string; name: string } | null;
-  } | null;
-}
+type Application = Awaited<ReturnType<typeof jobApplicationsService.getAll>>[number];
 
 export function JobApplications() {
   const { user } = useAuth();
@@ -41,7 +27,7 @@ export function JobApplications() {
     try {
       setLoading(true);
       const data = await jobApplicationsService.getAll();
-      setApplications(data as Application[]);
+      setApplications(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load applications');
     } finally {
@@ -49,20 +35,21 @@ export function JobApplications() {
     }
   };
 
-  const handleStageChange = async (id: string, stage: ApplicationStage) => {
+  const handleStageChange = async (application: Application, stage: ApplicationStage) => {
+    if (!user) return;
     try {
-      await jobApplicationsService.updateStage(id, stage);
-      setApplications(applications.map(a => a.id === id ? { ...a, stage } : a));
+      await jobApplicationsService.updateStage(application, stage, application.job.title, user.id);
+      setApplications(applications.map(a => a.id === application.id ? { ...a, stage } : a));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update stage');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Remove this application?')) return;
+  const handleDelete = async (application: Application) => {
+    if (!confirm(`Remove ${application.candidate.full_name} from ${application.job.title}?`)) return;
     try {
-      await jobApplicationsService.delete(id);
-      setApplications(applications.filter(a => a.id !== id));
+      await jobApplicationsService.delete(application.id);
+      setApplications(applications.filter(a => a.id !== application.id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete application');
     }
@@ -76,8 +63,6 @@ export function JobApplications() {
     const matchesStage = stageFilter === 'All' || a.stage === stageFilter;
     return matchesSearch && matchesStage;
   });
-
-  const byStage = (stage: ApplicationStage) => filtered.filter(a => a.stage === stage);
 
   return (
     <div className="p-8">
@@ -132,7 +117,7 @@ export function JobApplications() {
 
       {/* Stage filter pills */}
       <div className="flex flex-wrap gap-2 mb-6">
-        {(['All', ...STAGES] as const).map((stage) => (
+        {(['All', ...APPLICATION_STAGES] as const).map((stage) => (
           <button
             key={stage}
             onClick={() => setStageFilter(stage)}
@@ -157,9 +142,8 @@ export function JobApplications() {
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
         </div>
       ) : view === 'board' ? (
-        <BoardView
-          stages={STAGES}
-          byStage={byStage}
+        <ApplicationBoard
+          applications={filtered}
           onStageChange={handleStageChange}
           onDelete={handleDelete}
         />
@@ -175,8 +159,9 @@ export function JobApplications() {
         <AddApplicationModal
           userId={user?.id || ''}
           onClose={() => setShowAddModal(false)}
-          onCreated={(app) => {
-            setApplications([app as Application, ...applications]);
+          onCreated={() => {
+            // Reload: the insert returns the row without the candidate and job names.
+            loadApplications();
             setShowAddModal(false);
           }}
         />
@@ -185,105 +170,11 @@ export function JobApplications() {
   );
 }
 
-// ── Board View ────────────────────────────────────────────
-function BoardView({ stages, byStage, onStageChange, onDelete }: {
-  stages: ApplicationStage[];
-  byStage: (stage: ApplicationStage) => Application[];
-  onStageChange: (id: string, stage: ApplicationStage) => void;
-  onDelete: (id: string) => void;
-}) {
-  return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
-      {stages.map((stage) => {
-        const apps = byStage(stage);
-        return (
-          <div key={stage} className="flex-shrink-0 w-72">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className={`w-2.5 h-2.5 rounded-full ${PIPELINE_DOT_COLORS[stage]}`} />
-                <h3 className="font-semibold text-gray-700 text-sm">{stage}</h3>
-              </div>
-              <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-                {apps.length}
-              </span>
-            </div>
-            <div className="space-y-3">
-              {apps.map((app) => (
-                <ApplicationCard
-                  key={app.id}
-                  app={app}
-                  stages={stages}
-                  onStageChange={onStageChange}
-                  onDelete={onDelete}
-                />
-              ))}
-              {apps.length === 0 && (
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
-                  <p className="text-xs text-gray-400">No applications</p>
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── Application Card ──────────────────────────────────────
-function ApplicationCard({ app, stages, onStageChange, onDelete }: {
-  app: Application;
-  stages: ApplicationStage[];
-  onStageChange: (id: string, stage: ApplicationStage) => void;
-  onDelete: (id: string) => void;
-}) {
-  return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <User className="w-3.5 h-3.5 text-blue-600" />
-          </div>
-          <span className="font-medium text-gray-900 text-sm">
-            {app.candidate?.full_name || 'Unknown'}
-          </span>
-        </div>
-        <button
-          onClick={() => onDelete(app.id)}
-          className="p-1 text-gray-300 hover:text-red-500 transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
-      <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-1">
-        <Briefcase className="w-3 h-3" />
-        {app.job?.title || 'Unknown role'}
-      </div>
-
-      {app.job?.company && (
-        <div className="flex items-center gap-1.5 text-xs text-gray-400 mb-3">
-          <Building2 className="w-3 h-3" />
-          {app.job.company.name}
-        </div>
-      )}
-
-      <select
-        value={app.stage}
-        onChange={(e) => onStageChange(app.id, e.target.value as ApplicationStage)}
-        className={`w-full text-xs px-2 py-1.5 rounded-lg border-0 font-medium cursor-pointer ${pipelineBadgeClass(app.stage)}`}
-      >
-        {stages.map(s => <option key={s} value={s}>{s}</option>)}
-      </select>
-    </div>
-  );
-}
-
 // ── List View ─────────────────────────────────────────────
 function ListView({ applications, onStageChange, onDelete }: {
   applications: Application[];
-  onStageChange: (id: string, stage: ApplicationStage) => void;
-  onDelete: (id: string) => void;
+  onStageChange: (application: Application, stage: ApplicationStage) => void;
+  onDelete: (application: Application) => void;
 }) {
   if (applications.length === 0) {
     return (
@@ -327,10 +218,10 @@ function ListView({ applications, onStageChange, onDelete }: {
               <td className="px-6 py-4">
                 <select
                   value={app.stage}
-                  onChange={(e) => onStageChange(app.id, e.target.value as ApplicationStage)}
+                  onChange={(e) => onStageChange(app, e.target.value as ApplicationStage)}
                   className={`text-xs px-2 py-1.5 rounded-lg border-0 font-medium cursor-pointer ${pipelineBadgeClass(app.stage)}`}
                 >
-                  {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+                  {APPLICATION_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </td>
               <td className="px-6 py-4 text-xs text-gray-500">
@@ -338,7 +229,7 @@ function ListView({ applications, onStageChange, onDelete }: {
               </td>
               <td className="px-6 py-4">
                 <button
-                  onClick={() => onDelete(app.id)}
+                  onClick={() => onDelete(app)}
                   className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -356,7 +247,7 @@ function ListView({ applications, onStageChange, onDelete }: {
 function AddApplicationModal({ userId, onClose, onCreated }: {
   userId: string;
   onClose: () => void;
-  onCreated: (app: any) => void;
+  onCreated: () => void;
 }) {
   const [candidateId, setCandidateId] = useState('');
   const [jobId, setJobId] = useState('');
@@ -384,14 +275,14 @@ function AddApplicationModal({ userId, onClose, onCreated }: {
     setLoading(true);
     setError('');
     try {
-      const created = await jobApplicationsService.create({
+      await jobApplicationsService.create({
         candidate_id: candidateId,
         job_id: jobId,
         stage,
         notes: notes || null,
         created_by: userId,
       });
-      onCreated(created);
+      onCreated();
     } catch (err: any) {
       if (err?.code === '23505') {
         setError('This candidate already has an application for this job.');
@@ -449,7 +340,7 @@ function AddApplicationModal({ userId, onClose, onCreated }: {
               onChange={(e) => setStage(e.target.value as ApplicationStage)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+              {APPLICATION_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
           </div>
 

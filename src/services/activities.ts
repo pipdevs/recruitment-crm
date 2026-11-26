@@ -83,20 +83,21 @@ export const activitiesService = {
     );
   },
 
+  // Logged on the candidate, naming the job, so their timeline shows every process they're in.
   async createStageMove(
-    entityType: EntityType,
-    entityId: string,
+    candidateId: string,
+    jobTitle: string,
     oldStage: string,
     newStage: string,
     authorId: string
   ) {
     return this.create(
-      entityType,
-      entityId,
+      'candidate',
+      candidateId,
       'stage_moved',
-      `Moved from ${oldStage} to ${newStage}`,
+      `${jobTitle}: moved from ${oldStage} to ${newStage}`,
       authorId,
-      { old_stage: oldStage, new_stage: newStage }
+      { job_title: jobTitle, old_stage: oldStage, new_stage: newStage }
     );
   },
 

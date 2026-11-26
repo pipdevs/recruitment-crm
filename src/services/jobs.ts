@@ -15,6 +15,16 @@ export const jobsService = {
     return data;
   },
 
+  async getById(id: string) {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('*, company:company_id(id, name)')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
   async create(job: JobInsert) {
     const organisation_id = await getOrganisationId();
     const { data, error } = await supabase

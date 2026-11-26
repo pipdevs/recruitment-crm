@@ -281,6 +281,7 @@ export function CandidateDetail() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [statusError, setStatusError] = useState('');
 
   useEffect(() => {
     if (id) loadCandidate(id);
@@ -312,16 +313,19 @@ export function CandidateDetail() {
 
   const handleStatusChange = async (newStatus: typeof STATUSES[number]) => {
     if (!candidate) return;
+    const previousStatus = candidate.status ?? 'New';
     setStatusUpdating(true);
+    setStatusError('');
     try {
+      setCandidate(await candidatesService.updateStatus(candidate.id, newStatus));
       if (user) {
         await activitiesService.createStageMove(
           'candidate', candidate.id,
-          candidate.status ?? 'New', newStatus, user.id
+          previousStatus, newStatus, user.id
         );
       }
-      const updated = await candidatesService.updateStatus(candidate.id, newStatus);
-      setCandidate(updated);
+    } catch (err) {
+      setStatusError(err instanceof Error ? err.message : 'Failed to update status');
     } finally {
       setStatusUpdating(false);
     }
@@ -382,6 +386,7 @@ export function CandidateDetail() {
               >
                 {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
+              {statusError && <p className="mt-2 text-sm text-red-600">{statusError}</p>}
             </div>
 
             <div className="space-y-3 text-sm">
@@ -401,12 +406,6 @@ export function CandidateDetail() {
                 <div>
                   <p className="text-xs text-gray-500 mb-0.5">LinkedIn</p>
                   <a href={candidate.linkedin_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">View Profile</a>
-                </div>
-              )}
-              {candidate.resume_url && (
-                <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Resume</p>
-                  <a href={candidate.resume_url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Download</a>
                 </div>
               )}
             </div>

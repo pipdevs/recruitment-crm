@@ -31,6 +31,13 @@ const TYPE_LABELS = {
   contact: 'Contact',
 };
 
+const TYPE_LABELS_PLURAL = {
+  candidate: 'Candidates',
+  company: 'Companies',
+  job: 'Jobs',
+  contact: 'Contacts',
+};
+
 const TYPE_ROUTES = {
   candidate: '/candidates',
   company: '/companies',
@@ -206,14 +213,14 @@ export function GlobalSearch() {
                 return (
                   <div key={type}>
                     <div className="px-4 pt-2 pb-1 text-xs font-semibold text-slate-400 uppercase tracking-wider bg-slate-50">
-                      {TYPE_LABELS[type]}s
+                      {TYPE_LABELS_PLURAL[type]}
                     </div>
                     {items.map((result) => {
                       const globalIndex = results.indexOf(result);
                       const isSelected = globalIndex === selected;
                       return (
                         <div
-                          key={result.id}
+                          key={`${result.type}-${result.id}`}
                           onClick={() => handleSelect(result)}
                           onMouseEnter={() => setSelected(globalIndex)}
                           className={`flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors border-l-2 ${

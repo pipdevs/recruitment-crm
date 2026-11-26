@@ -34,14 +34,6 @@ export const candidatesService = {
     return { candidates: data, total: count ?? 0 };
   },
 
-  async getAll() {    const { data, error } = await supabase
-      .from('candidates')
-      .select('*')
-      .order('full_name');
-    if (error) throw error;
-    return data;
-  },
-
   async create(candidate: CandidateInsert) {
     const organisation_id = await getOrgId();
     const { data, error } = await supabase

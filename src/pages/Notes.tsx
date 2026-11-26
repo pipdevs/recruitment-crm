@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { StickyNote, Trash2, Building2, Users, Briefcase } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { CandidatePicker } from '../components/CandidatePicker';
 import { supabase } from '../lib/supabase';
 
 interface Note {
@@ -42,7 +43,9 @@ export function Notes() {
   }, [filterType]);
 
   useEffect(() => {
-    loadEntities(entityType);
+    setEntityId('');
+    setEntities([]);
+    if (entityType !== 'candidate') loadEntities(entityType);
   }, [entityType]);
 
   const loadNotes = async () => {
@@ -101,13 +104,10 @@ export function Notes() {
     }));
   };
 
-  const loadEntities = async (type: 'candidate' | 'company' | 'job') => {
+  const loadEntities = async (type: 'company' | 'job') => {
     try {
       let data: any[] = [];
-      if (type === 'candidate') {
-        const res = await supabase.from('candidates').select('id, full_name').order('full_name');
-        data = res.data || [];
-      } else if (type === 'company') {
+      if (type === 'company') {
         const res = await supabase.from('companies').select('id, name').order('name');
         data = res.data || [];
       } else {
@@ -115,7 +115,6 @@ export function Notes() {
         data = res.data || [];
       }
       setEntities(data);
-      setEntityId('');
     } catch (err) {
       console.error('Failed to load entities:', err);
     }
@@ -199,16 +198,20 @@ export function Notes() {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               {entityType.charAt(0).toUpperCase() + entityType.slice(1)}
             </label>
-            <select
-              value={entityId}
-              onChange={(e) => setEntityId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select...</option>
-              {entities.map((e) => (
-                <option key={e.id} value={e.id}>{getEntityLabel(e)}</option>
-              ))}
-            </select>
+            {entityType === 'candidate' ? (
+              <CandidatePicker value={entityId} onChange={setEntityId} />
+            ) : (
+              <select
+                value={entityId}
+                onChange={(e) => setEntityId(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select...</option>
+                {entities.map((e) => (
+                  <option key={e.id} value={e.id}>{getEntityLabel(e)}</option>
+                ))}
+              </select>
+            )}
           </div>
           <div className="md:col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">Note</label>

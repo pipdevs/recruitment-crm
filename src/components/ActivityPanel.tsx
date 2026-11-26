@@ -4,7 +4,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { ActivityFeed } from './ActivityFeed';
 import { tasksService } from '../services/tasks';
-import type { Database } from '../lib/database.types';
 
 type EntityType = 'candidate' | 'company' | 'job';
 type TaskStatus = 'Pending' | 'In Progress' | 'Completed';
@@ -24,7 +23,7 @@ export function ActivityPanel({
   getNotes,
   deleteNote,
 }: ActivityPanelProps) {
-  const { user, organisation } = useAuth();
+  const { user } = useAuth();
   const [tab, setTab] = useState<'notes' | 'tasks' | 'activity'>('notes');
   const [notes, setNotes] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);

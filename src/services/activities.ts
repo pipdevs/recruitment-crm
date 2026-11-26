@@ -27,6 +27,10 @@ export const activitiesService = {
     authorId: string,
     metadata?: Record<string, unknown>
   ) {
+    const { data: organisationId, error: organisationError } = await supabase.rpc('get_user_organisation_id');
+    if (organisationError) throw organisationError;
+    if (!organisationId) throw new Error('Cannot record activity: no organisation for the current user');
+
     const { data, error } = await supabase
       .from('activities')
       .insert([{
@@ -36,6 +40,7 @@ export const activitiesService = {
         message,
         metadata: (metadata || null) as Json | null,
         author: authorId,
+        organisation_id: organisationId,
       }])
       .select(`
         *,

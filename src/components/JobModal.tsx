@@ -12,7 +12,7 @@ interface JobModalProps {
   isOpen: boolean;
   job?: Job & { company?: { id: string; name: string } };
   onClose: () => void;
-  onSubmit: (data: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onSubmit: (data: Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => Promise<void>;
 }
 
 export function JobModal({ isOpen, job, onClose, onSubmit }: JobModalProps) {
@@ -75,7 +75,6 @@ export function JobModal({ isOpen, job, onClose, onSubmit }: JobModalProps) {
         salary_range: salaryRange || null,
         created_by: job?.created_by || null,
         assigned_to: job?.assigned_to || null,
-        organisation_id: null,
       });
 
       onClose();

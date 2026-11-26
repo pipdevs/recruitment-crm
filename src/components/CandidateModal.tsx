@@ -4,7 +4,7 @@ import type { Database } from '../lib/database.types';
 import type { CandidateStatus } from '../lib/enums';
 
 type Candidate = Database['public']['Tables']['candidates']['Row'];
-export type CandidateFormData = Pick<Candidate, 'full_name' | 'email' | 'phone' | 'linkedin_url' | 'resume_url' | 'status'>;
+export type CandidateFormData = Pick<Candidate, 'full_name' | 'email' | 'phone' | 'linkedin_url' | 'status'>;
 
 const STATUSES: CandidateStatus[] = ['New', 'Screening', 'Interview', 'Offer', 'Hired', 'Rejected'];
 
@@ -20,7 +20,6 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [resumeUrl, setResumeUrl] = useState('');
   const [status, setStatus] = useState<CandidateStatus>('New');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -31,14 +30,12 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
       setEmail(candidate.email || '');
       setPhone(candidate.phone || '');
       setLinkedinUrl(candidate.linkedin_url || '');
-      setResumeUrl(candidate.resume_url || '');
       setStatus((candidate.status as CandidateStatus) ?? 'New');
     } else {
       setFullName('');
       setEmail('');
       setPhone('');
       setLinkedinUrl('');
-      setResumeUrl('');
       setStatus('New');
     }
     setError('');
@@ -55,7 +52,6 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
       email: email || null,
       phone: phone || null,
       linkedin_url: linkedinUrl || null,
-      resume_url: resumeUrl || null,
       status,
     });
     onClose();
@@ -138,19 +134,6 @@ export function CandidateModal({ isOpen, candidate, onClose, onSubmit }: Candida
               onChange={(e) => setLinkedinUrl(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="https://linkedin.com/in/candidate"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Resume URL
-            </label>
-            <input
-              type="url"
-              value={resumeUrl}
-              onChange={(e) => setResumeUrl(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="https://example.com/resume.pdf"
             />
           </div>
 

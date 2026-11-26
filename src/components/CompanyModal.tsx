@@ -9,7 +9,7 @@ interface CompanyModalProps {
   isOpen: boolean;
   company?: Company;
   onClose: () => void;
-  onSubmit: (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onSubmit: (data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => Promise<void>;
 }
 
 export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModalProps) {
@@ -60,7 +60,6 @@ export function CompanyModal({ isOpen, company, onClose, onSubmit }: CompanyModa
         notes: notes || null,
         created_by: '',
         assigned_to: null,
-        organisation_id: null,
       });
       onClose();
     } catch (err: any) {

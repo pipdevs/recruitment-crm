@@ -6,8 +6,13 @@ import { Calendar } from '../components/Calendar';
 import { tasksService } from '../services/tasks';
 import { activitiesService } from '../services/activities';
 import type { Database } from '../lib/database.types';
+import type { EntityType } from '../lib/enums';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
+type TaskFormData = Omit<Task, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>;
+
+// tasksService.getAll() selects columns only, so assignee is never populated today.
+type TaskWithAssignee = Task & { assignee?: { id: string; full_name: string } };
 
 const STATUS_COLORS: Record<string, string> = {
   Pending: 'bg-gray-100 text-gray-800',
@@ -18,8 +23,8 @@ const STATUS_COLORS: Record<string, string> = {
 export function Tasks() {
   const { user } = useAuth();
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
-  const [tasks, setTasks] = useState<any[]>([]);
-  const [selectedTask, setSelectedTask] = useState<any>();
+  const [tasks, setTasks] = useState<TaskWithAssignee[]>([]);
+  const [selectedTask, setSelectedTask] = useState<TaskWithAssignee | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -41,43 +46,36 @@ export function Tasks() {
     }
   };
 
-  const handleCreate = async (data: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
-    try {
-      const newTask = await tasksService.create({
-        ...data,
-        created_by: user?.id || null,
-      });
-      setTasks([newTask, ...tasks]);
-      setModalOpen(false);
-    } catch (err) {
-      throw err;
-    }
+  const handleCreate = async (data: TaskFormData) => {
+    const newTask = await tasksService.create({
+      ...data,
+      created_by: user?.id || null,
+    });
+    setTasks([newTask, ...tasks]);
+    setModalOpen(false);
   };
 
-  const handleUpdate = async (data: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleUpdate = async (data: TaskFormData) => {
     if (!selectedTask || !user) return;
-    try {
-      const updated = await tasksService.update(selectedTask.id, data);
+    const updated = await tasksService.update(selectedTask.id, data);
 
-      if (selectedTask.status !== updated.status) {
-        if (updated.status === 'Completed') {
-          if (updated.related_entity_type && updated.related_entity_id) {
-            await activitiesService.createTaskCompletion(
-              updated.related_entity_type as any,
-              updated.related_entity_id,
-              updated.title,
-              user.id
-            );
-          }
-        }
-      }
-
-      setTasks(tasks.map(t => t.id === updated.id ? updated : t));
-      setSelectedTask(updated);
-      setModalOpen(false);
-    } catch (err) {
-      throw err;
+    if (
+      selectedTask.status !== updated.status &&
+      updated.status === 'Completed' &&
+      updated.related_entity_type &&
+      updated.related_entity_id
+    ) {
+      await activitiesService.createTaskCompletion(
+        updated.related_entity_type as EntityType,
+        updated.related_entity_id,
+        updated.title,
+        user.id
+      );
     }
+
+    setTasks(tasks.map(t => t.id === updated.id ? updated : t));
+    setSelectedTask(updated);
+    setModalOpen(false);
   };
 
   const handleDelete = async (id: string) => {
@@ -90,16 +88,18 @@ export function Tasks() {
     }
   };
 
-  const handleEditClick = (task: any) => {
+  const handleEditClick = (task: TaskWithAssignee) => {
     setSelectedTask(task);
     setModalOpen(true);
   };
 
-  const handleTaskClick = (task: any) => {
-    handleEditClick(task);
+  // The calendar hands back its own narrowed shape, so look the full task up by id.
+  const handleTaskClick = (task: { id: string }) => {
+    const full = tasks.find(t => t.id === task.id);
+    if (full) handleEditClick(full);
   };
 
-  const handleDateClick = (_date: Date) => {
+  const handleDateClick = () => {
     setSelectedTask(undefined);
     setModalOpen(true);
   };
@@ -108,10 +108,16 @@ export function Tasks() {
     ? tasks
     : tasks.filter(t => t.status === filterStatus);
 
+  // A task with no due date can't sit on a day cell.
+  const datedTasks = tasks.filter(
+    (task): task is TaskWithAssignee & { due_date: string; status: string } =>
+      task.due_date !== null && task.status !== null
+  );
+
   const isOverdue = (task: { due_date: string | null; status: string | null }) => {
-  if (!task.due_date) return false;
-  return new Date(task.due_date) < new Date() && task.status !== 'Completed';
-};
+    if (!task.due_date) return false;
+    return new Date(task.due_date) < new Date() && task.status !== 'Completed';
+  };
 
   if (loading) {
     return (
@@ -176,7 +182,7 @@ export function Tasks() {
 
       {viewMode === 'calendar' ? (
         <Calendar
-          tasks={tasks}
+          tasks={datedTasks}
           onTaskClick={handleTaskClick}
           onDateClick={handleDateClick}
         />
@@ -250,7 +256,7 @@ export function Tasks() {
                         <h3 className="text-lg font-semibold text-gray-900">
                           {task.title}
                         </h3>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[task.status]}`}>
+                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${task.status ? STATUS_COLORS[task.status] : ''}`}>
                           {task.status}
                         </span>
                         {isOverdue(task) && (

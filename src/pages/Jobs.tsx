@@ -45,13 +45,13 @@ export function JobList() {
     }
   };
 
-  const handleCreate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleCreate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
     const newJob = await jobsService.create({ ...data, created_by: user?.id || null });
     setJobs([newJob, ...jobs]);
     setModalOpen(false);
   };
 
-  const handleUpdate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleUpdate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
     if (!selectedJob) return;
     const updated = await jobsService.update(selectedJob.id, data);
     setJobs(jobs.map(j => j.id === updated.id ? updated : j));
@@ -205,7 +205,7 @@ export function JobDetail() {
     }
   };
 
-  const handleUpdate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleUpdate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
     if (!job) return;
     const updated = await jobsService.update(job.id, data);
     setJob(updated);

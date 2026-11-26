@@ -36,13 +36,13 @@ export function CompanyList() {
     }
   };
 
-  const handleCreate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleCreate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
     const newCompany = await companiesService.create({ ...data, created_by: user?.id || '' });
     setCompanies([newCompany, ...companies]);
     setModalOpen(false);
   };
 
-  const handleUpdate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleUpdate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
     if (!selectedCompany) return;
     const updated = await companiesService.update(selectedCompany.id, data);
     setCompanies(companies.map(c => c.id === updated.id ? updated : c));
@@ -195,7 +195,7 @@ export function CompanyDetail() {
     }
   };
 
-  const handleUpdate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at'>) => {
+  const handleUpdate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
     if (!company) return;
     const updated = await companiesService.update(company.id, data);
     setCompany(updated);

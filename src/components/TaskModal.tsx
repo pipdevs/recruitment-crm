@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { profilesService } from '../services/tasks';
-import { candidatesService } from '../services/candidates';
+import { CandidatePicker } from './CandidatePicker';
 import { companiesService } from '../services/companies';
 import { jobsService } from '../services/jobs';
 import type { Database } from '../lib/database.types';
@@ -15,7 +15,7 @@ interface TaskModalProps {
   isOpen: boolean;
   task?: Task & { assignee?: { id: string; full_name: string } };
   onClose: () => void;
-  onSubmit: (data: Omit<Task, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onSubmit: (data: Omit<Task, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => Promise<void>;
 }
 
 export function TaskModal({ isOpen, task, onClose, onSubmit }: TaskModalProps) {
@@ -38,12 +38,11 @@ export function TaskModal({ isOpen, task, onClose, onSubmit }: TaskModalProps) {
   }, [isOpen]);
 
   useEffect(() => {
-    if (relatedEntityType) {
-      loadEntities(relatedEntityType);
-    } else {
+    if (!relatedEntityType) {
       setEntities([]);
-      setRelatedEntityId('');
+      return;
     }
+    if (relatedEntityType !== 'candidate') loadEntities(relatedEntityType);
   }, [relatedEntityType]);
 
   useEffect(() => {
@@ -76,13 +75,10 @@ export function TaskModal({ isOpen, task, onClose, onSubmit }: TaskModalProps) {
     }
   };
 
-  const loadEntities = async (entityType: EntityType) => {
+  const loadEntities = async (entityType: Exclude<EntityType, 'candidate'>) => {
     try {
       let data;
       switch (entityType) {
-        case 'candidate':
-          data = await candidatesService.getAll();
-          break;
         case 'company':
           data = await companiesService.getAll();
           break;
@@ -97,10 +93,8 @@ export function TaskModal({ isOpen, task, onClose, onSubmit }: TaskModalProps) {
     }
   };
 
-  const getEntityLabel = (entity: any, type: EntityType) => {
+  const getEntityLabel = (entity: any, type: Exclude<EntityType, 'candidate'>) => {
     switch (type) {
-      case 'candidate':
-        return entity.full_name;
       case 'company':
         return entity.name;
       case 'job':
@@ -125,7 +119,6 @@ export function TaskModal({ isOpen, task, onClose, onSubmit }: TaskModalProps) {
         related_entity_type: (relatedEntityType as EntityType) || null,
         related_entity_id: relatedEntityId || null,
         created_by: task?.created_by || null,
-        organisation_id: null,
       });
       onClose();
     } catch (err) {
@@ -242,7 +235,10 @@ export function TaskModal({ isOpen, task, onClose, onSubmit }: TaskModalProps) {
                 </label>
                 <select
                   value={relatedEntityType}
-                  onChange={(e) => setRelatedEntityType(e.target.value as EntityType | '')}
+                  onChange={(e) => {
+                    setRelatedEntityType(e.target.value as EntityType | '');
+                    setRelatedEntityId('');
+                  }}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="">None</option>
@@ -257,18 +253,22 @@ export function TaskModal({ isOpen, task, onClose, onSubmit }: TaskModalProps) {
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Select {relatedEntityType}
                   </label>
-                  <select
-                    value={relatedEntityId}
-                    onChange={(e) => setRelatedEntityId(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    <option value="">Select...</option>
-                    {entities.map((entity) => (
-                      <option key={entity.id} value={entity.id}>
-                        {getEntityLabel(entity, relatedEntityType)}
-                      </option>
-                    ))}
-                  </select>
+                  {relatedEntityType === 'candidate' ? (
+                    <CandidatePicker value={relatedEntityId} onChange={setRelatedEntityId} />
+                  ) : (
+                    <select
+                      value={relatedEntityId}
+                      onChange={(e) => setRelatedEntityId(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="">Select...</option>
+                      {entities.map((entity) => (
+                        <option key={entity.id} value={entity.id}>
+                          {getEntityLabel(entity, relatedEntityType)}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
               )}
             </div>

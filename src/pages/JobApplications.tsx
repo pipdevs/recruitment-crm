@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Search, ChevronRight, Briefcase, User, Building2, Trash2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { jobApplicationsService } from '../services/jobApplications';
+import { CandidatePicker } from '../components/CandidatePicker';
 import { supabase } from '../lib/supabase';
 
 type ApplicationStage = 'Applied' | 'Screening' | 'Interview' | 'Offer' | 'Placed' | 'Rejected';
@@ -380,19 +381,18 @@ function AddApplicationModal({ userId, onClose, onCreated }: {
   const [jobId, setJobId] = useState('');
   const [stage, setStage] = useState<ApplicationStage>('Applied');
   const [notes, setNotes] = useState('');
-  const [candidates, setCandidates] = useState<any[]>([]);
   const [jobs, setJobs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const load = async () => {
-      const [cRes, jRes] = await Promise.all([
-        supabase.from('candidates').select('id, full_name').order('full_name'),
-        supabase.from('jobs').select('id, title, company:company_id(name)').eq('status', 'Open').order('title'),
-      ]);
-      setCandidates(cRes.data || []);
-      setJobs(jRes.data || []);
+      const { data } = await supabase
+        .from('jobs')
+        .select('id, title, company:company_id(name)')
+        .eq('status', 'Open')
+        .order('title');
+      setJobs(data || []);
     };
     load();
   }, []);
@@ -441,17 +441,7 @@ function AddApplicationModal({ userId, onClose, onCreated }: {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Candidate *</label>
-            <select
-              value={candidateId}
-              onChange={(e) => setCandidateId(e.target.value)}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select candidate...</option>
-              {candidates.map((c) => (
-                <option key={c.id} value={c.id}>{c.full_name}</option>
-              ))}
-            </select>
+            <CandidatePicker value={candidateId} onChange={setCandidateId} />
           </div>
 
           <div>

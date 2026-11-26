@@ -1,6 +1,7 @@
 import { supabase } from '../lib/supabase';
 import { getOrganisationId } from '../lib/organisation';
 import type { Database } from '../lib/database.types';
+import { candidateDocumentsService } from './candidateDocuments';
 
 type CandidateInsert = Database['public']['Tables']['candidates']['Insert'];
 type CandidateUpdate = Database['public']['Tables']['candidates']['Update'];
@@ -51,6 +52,8 @@ export const candidatesService = {
   },
 
   async delete(id: string) {
+    // Files first: the candidate_documents rows cascade with the candidate, the files don't.
+    await candidateDocumentsService.deleteFilesForCandidate(id);
     const { error } = await supabase
       .from('candidates')
       .delete()

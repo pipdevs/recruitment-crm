@@ -28,7 +28,7 @@ const CONFIGS: Record<ImportEntityType, ImportConfig> = {
 
 const TEMPLATES: Record<ImportEntityType, string> = {
   candidates: 'full_name,email,phone,linkedin_url,status\nJane Smith,jane@example.com,07700900000,https://linkedin.com/in/jane,New',
-  companies: 'name,industry,website,notes\nAcme Ltd,Technology,https://acme.com,Key client',
+  companies: 'name,industry,website,location\nAcme Ltd,Technology,acme.com,London',
   contacts: 'full_name,email,phone,job_title,company_name\nJohn Doe,john@acme.com,07700900001,Head of Talent,Acme Ltd',
 };
 

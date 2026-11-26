@@ -1,14 +1,17 @@
 import { useState, useEffect } from 'react';
-import { Building2, Edit2, Trash2, Plus, Link as LinkIcon, Upload } from 'lucide-react';
+import { Building2, Edit2, Trash2, Plus, Link as LinkIcon, Linkedin, MapPin, Upload } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
-import { CompanyModal } from '../components/CompanyModal';
+import { CompanyModal, type CompanyFormData } from '../components/CompanyModal';
 import { ActivityPanel } from '../components/ActivityPanel';
 import { companiesService } from '../services/companies';
+import { activitiesService } from '../services/activities';
 import type { Database } from '../lib/database.types';
 import { ImportModal } from '../components/ImportModal';
 import { CompanyContacts } from '../components/CompanyContacts';
 import { CompanyJobs } from '../components/CompanyJobs';
+import { COMPANY_STATUSES, companyStatusBadgeClass, type CompanyStatus } from '../lib/enums';
+import { domainFromWebsite, websiteHref } from '../lib/domain';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 
@@ -37,13 +40,13 @@ export function CompanyList() {
     }
   };
 
-  const handleCreate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
-    const newCompany = await companiesService.create({ ...data, created_by: user?.id || '' });
+  const handleCreate = async (data: CompanyFormData) => {
+    const newCompany = await companiesService.create({ ...data, created_by: user?.id });
     setCompanies([newCompany, ...companies]);
     setModalOpen(false);
   };
 
-  const handleUpdate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
+  const handleUpdate = async (data: CompanyFormData) => {
     if (!selectedCompany) return;
     const updated = await companiesService.update(selectedCompany.id, data);
     setCompanies(companies.map(c => c.id === updated.id ? updated : c));
@@ -115,23 +118,31 @@ export function CompanyList() {
               className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => navigate(`/companies/${company.id}`)}
             >
-              <div className="flex items-start justify-between mb-3">
+              <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{company.name}</h3>
-                  {company.industry && (
-                    <p className="text-sm text-gray-600 mb-2">{company.industry}</p>
-                  )}
-                  {company.website && (
-                    
-                      <a href={company.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={e => e.stopPropagation()}
-                      className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
-                    >
-                      <LinkIcon className="w-4 h-4" /> Visit website
-                    </a>
-                  )}
+                  <div className="flex items-center gap-3 mb-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{company.name}</h3>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${companyStatusBadgeClass(company.status)}`}>
+                      {company.status}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                    {company.industry && <span>{company.industry}</span>}
+                    {company.location && (
+                      <span className="flex items-center gap-1"><MapPin className="w-4 h-4" />{company.location}</span>
+                    )}
+                    {company.website && (
+                      <a
+                        href={websiteHref(company.website)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={e => e.stopPropagation()}
+                        className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                      >
+                        <LinkIcon className="w-4 h-4" />{company.domain ?? domainFromWebsite(company.website) ?? company.website}
+                      </a>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2" onClick={e => e.stopPropagation()}>
                   <button
@@ -148,9 +159,6 @@ export function CompanyList() {
                   </button>
                 </div>
               </div>
-              {company.notes && (
-                <p className="text-sm text-gray-600 line-clamp-2">{company.notes}</p>
-              )}
             </div>
           ))}
         </div>
@@ -176,10 +184,12 @@ export function CompanyList() {
 // ── Detail View ───────────────────────────────────────────
 export function CompanyDetail() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
 
   useEffect(() => {
     if (id) loadCompany(id);
@@ -196,11 +206,26 @@ export function CompanyDetail() {
     }
   };
 
-  const handleUpdate = async (data: Omit<Company, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
+  const handleUpdate = async (data: CompanyFormData) => {
     if (!company) return;
     const updated = await companiesService.update(company.id, data);
     setCompany(updated);
     setModalOpen(false);
+  };
+
+  // Same pattern as candidates and jobs: update first, then log.
+  const handleStatusChange = async (newStatus: CompanyStatus) => {
+    if (!company) return;
+    setStatusUpdating(true);
+    try {
+      const updated = await companiesService.update(company.id, { status: newStatus });
+      if (user) {
+        await activitiesService.createStatusChange('company', company.id, company.status, newStatus, user.id);
+      }
+      setCompany(updated);
+    } finally {
+      setStatusUpdating(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -253,7 +278,18 @@ export function CompanyDetail() {
               </div>
             </div>
 
-            <h1 className="text-xl font-bold text-gray-900 mb-4">{company.name}</h1>
+            <h1 className="text-xl font-bold text-gray-900 mb-3">{company.name}</h1>
+
+            <div className="mb-4">
+              <select
+                value={company.status}
+                onChange={e => handleStatusChange(e.target.value as CompanyStatus)}
+                disabled={statusUpdating}
+                className={`w-full px-3 py-2 border-0 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 ${companyStatusBadgeClass(company.status)}`}
+              >
+                {COMPANY_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
 
             <div className="space-y-3 text-sm">
               {company.industry && (
@@ -262,25 +298,42 @@ export function CompanyDetail() {
                   <p className="font-medium text-gray-900">{company.industry}</p>
                 </div>
               )}
-              {company.website && (
-                <div>  
-                <a href={company.website}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700"
-              >
-                <LinkIcon className="w-4 h-4" />
-                {' '}Visit website
-              </a>
-              </div>
-            )}
-              {company.notes ? (
+              {company.location && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Notes</p>
-                  <p className="text-gray-700">{company.notes}</p>
+                  <p className="text-xs text-gray-500 mb-0.5">Location</p>
+                  <p className="font-medium text-gray-900">{company.location}</p>
                 </div>
-              ) : null}
+              )}
+              {company.fee_percentage !== null && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Standard fee</p>
+                  <p className="font-medium text-gray-900">{company.fee_percentage}%</p>
+                </div>
+              )}
+              {(company.website || company.linkedin_url) && (
+                <div className="flex flex-wrap gap-4 pt-1">
+                  {company.website && (
+                    <a
+                      href={websiteHref(company.website)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                    >
+                      <LinkIcon className="w-4 h-4" />{company.domain ?? company.website}
+                    </a>
+                  )}
+                  {company.linkedin_url && (
+                    <a
+                      href={company.linkedin_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-blue-600 hover:text-blue-700"
+                    >
+                      <Linkedin className="w-4 h-4" />LinkedIn
+                    </a>
+                  )}
+                </div>
+              )}
             </div>
           </div>
           <CompanyJobs companyId={company.id} />

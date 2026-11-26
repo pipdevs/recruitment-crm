@@ -18,7 +18,7 @@ export const jobsService = {
   async getById(id: string) {
     const { data, error } = await supabase
       .from('jobs')
-      .select('*, company:company_id(id, name)')
+      .select('*, company:company_id(id, name), contact:contact_id(id, full_name, job_title)')
       .eq('id', id)
       .maybeSingle();
     if (error) throw error;

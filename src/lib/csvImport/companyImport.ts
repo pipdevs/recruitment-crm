@@ -6,6 +6,7 @@ import { supabase } from '../../lib/supabase';
 import type { ImportConfig, ValidatedRow, ImportResult } from './types';
 import { fetchAllRows } from './fetchAll';
 import { sanitiseName } from './validators';
+import { domainFromWebsite } from '../domain';
 
 export const COMPANY_CONFIG: ImportConfig = {
   entityType: 'companies',
@@ -13,7 +14,7 @@ export const COMPANY_CONFIG: ImportConfig = {
     { key: 'name', label: 'Company Name', required: true },
     { key: 'industry', label: 'Industry', required: false },
     { key: 'website', label: 'Website', required: false },
-    { key: 'notes', label: 'Notes', required: false },
+    { key: 'location', label: 'Location', required: false },
     { key: 'contact_full_name', label: 'Contact Name', required: false },
     { key: 'contact_email', label: 'Contact Email', required: false },
     { key: 'contact_phone', label: 'Contact Phone', required: false },
@@ -31,8 +32,9 @@ export const COMPANY_CONFIG: ImportConfig = {
     'Company Website': 'website',
     'URL': 'website',
     'Website URL': 'website',
-    'Note': 'notes',
-    'Notes': 'notes',
+    'Domain': 'website',
+    'City': 'location',
+    'HQ': 'location',
     'Contact': 'contact_full_name',
     'Contact Name': 'contact_full_name',
     'Contact Email Address': 'contact_email',
@@ -41,7 +43,6 @@ export const COMPANY_CONFIG: ImportConfig = {
     'Contact Title': 'contact_job_title',
     'Contact Position': 'contact_job_title',
     'Contact Linkedin': 'contact_linkedin_url',
-    'Comments': 'notes',
   },
 };
 
@@ -74,7 +75,8 @@ export async function insertCompanies(
       name: row.data.name?.trim() || '',
       industry: row.data.industry?.trim() || null,
       website: row.data.website?.trim() || null,
-      notes: row.data.notes?.trim() || null,
+      location: row.data.location?.trim() || null,
+      domain: domainFromWebsite(row.data.website),
       organisation_id: organisationId,
       created_by: userId,
     }));

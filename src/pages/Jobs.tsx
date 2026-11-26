@@ -1,25 +1,31 @@
 import { useState, useEffect } from 'react';
-import { Briefcase, Edit2, Trash2, Plus, MapPin, DollarSign, Building2 } from 'lucide-react';
+import { Briefcase, Edit2, Trash2, Plus, MapPin, Banknote, Building2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate, useParams } from 'react-router-dom';
-import { JobModal } from '../components/JobModal';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { JobModal, type JobFormData } from '../components/JobModal';
 import { ActivityPanel } from '../components/ActivityPanel';
 import { jobsService } from '../services/jobs';
 import { activitiesService } from '../services/activities';
-import type { Database } from '../lib/database.types';
 import { usePlanLimits } from '../hooks/usePlanLimits';
 import { UpgradePrompt } from '../components/UpgradePrompt';
 import { JobPipeline } from '../components/JobPipeline';
 import { JOB_STATUSES, jobStatusBadgeClass, type JobStatus } from '../lib/enums';
+import { formatPay } from '../lib/pay';
 
-type Job = Database['public']['Tables']['jobs']['Row'];
+type ListJob = Awaited<ReturnType<typeof jobsService.getAll>>[number];
+type DetailJob = NonNullable<Awaited<ReturnType<typeof jobsService.getById>>>;
+
+// "Contract" or "Permanent · 3 openings"
+function typeLine(job: { employment_type: string; openings: number }) {
+  return job.openings > 1 ? `${job.employment_type} · ${job.openings} openings` : job.employment_type;
+}
 
 // ── List View ─────────────────────────────────────────────
 export function JobList() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [jobs, setJobs] = useState<any[]>([]);
-  const [selectedJob, setSelectedJob] = useState<any>();
+  const [jobs, setJobs] = useState<ListJob[]>([]);
+  const [selectedJob, setSelectedJob] = useState<ListJob | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -30,8 +36,7 @@ export function JobList() {
   const loadJobs = async () => {
     try {
       setLoading(true);
-      const data = await jobsService.getAll();
-      setJobs(data || []);
+      setJobs(await jobsService.getAll());
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load jobs');
     } finally {
@@ -39,17 +44,18 @@ export function JobList() {
     }
   };
 
-  const handleCreate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
-    const newJob = await jobsService.create({ ...data, created_by: user?.id || null });
-    setJobs([newJob, ...jobs]);
+  // Reload after saving: the insert/update result has no company name.
+  const handleCreate = async (data: JobFormData) => {
+    await jobsService.create({ ...data, created_by: user?.id || null });
     setModalOpen(false);
+    await loadJobs();
   };
 
-  const handleUpdate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
+  const handleUpdate = async (data: JobFormData) => {
     if (!selectedJob) return;
-    const updated = await jobsService.update(selectedJob.id, data);
-    setJobs(jobs.map(j => j.id === updated.id ? updated : j));
+    await jobsService.update(selectedJob.id, data);
     setModalOpen(false);
+    await loadJobs();
   };
 
   const handleDelete = async (id: string) => {
@@ -107,58 +113,64 @@ export function JobList() {
         </div>
       ) : (
         <div className="grid gap-4">
-          {jobs.map((job) => (
-            <div
-              key={job.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => navigate(`/jobs/${job.id}`)}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${jobStatusBadgeClass(job.status)}`}>
-                      {job.status}
-                    </span>
+          {jobs.map((job) => {
+            const pay = formatPay(job);
+            return (
+              <div
+                key={job.id}
+                className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => navigate(`/jobs/${job.id}`)}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${jobStatusBadgeClass(job.status)}`}>
+                        {job.status}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                      {job.company && (
+                        <div className="flex items-center gap-1">
+                          <Building2 className="w-4 h-4" />{job.company.name}
+                        </div>
+                      )}
+                      <div className="flex items-center gap-1">
+                        <Briefcase className="w-4 h-4" />{typeLine(job)}
+                      </div>
+                      {job.location && (
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-4 h-4" />{job.location}
+                        </div>
+                      )}
+                      {pay && (
+                        <div className="flex items-center gap-1">
+                          <Banknote className="w-4 h-4" />{pay}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                    {job.company && (
-                      <div className="flex items-center gap-1">
-                        <Building2 className="w-4 h-4" />{job.company.name}
-                      </div>
-                    )}
-                    {job.location && (
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />{job.location}
-                      </div>
-                    )}
-                    {job.salary_range && (
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4" />{job.salary_range}
-                      </div>
-                    )}
+                  <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+                    <button
+                      onClick={() => { setSelectedJob(job); setModalOpen(true); }}
+                      className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <Edit2 className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(job.id)}
+                      className="p-2 text-gray-500 hover:bg-red-100 hover:text-red-600 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
-                <div className="flex gap-2" onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => { setSelectedJob(job); setModalOpen(true); }}
-                    className="p-2 text-gray-500 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Edit2 className="w-5 h-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(job.id)}
-                    className="p-2 text-gray-500 hover:bg-red-100 hover:text-red-600 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                </div>
+                {job.description && (
+                  <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
+                )}
               </div>
-              {job.description && (
-                <p className="text-sm text-gray-600 line-clamp-2">{job.description}</p>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -177,8 +189,7 @@ export function JobDetail() {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  // Typed in Phase B, once jobs.status is not null and JobModal takes the loaded shape.
-  const [job, setJob] = useState<any>(null);
+  const [job, setJob] = useState<DetailJob | null>(null);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
@@ -198,10 +209,10 @@ export function JobDetail() {
     }
   };
 
-  const handleUpdate = async (data: Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => {
+  const handleUpdate = async (data: JobFormData) => {
     if (!job) return;
     await jobsService.update(job.id, data);
-    // Reload rather than use the update's result, which has no company.
+    // Reload rather than use the update's result, which has no company or hiring manager.
     setJob(await jobsService.getById(job.id));
     setModalOpen(false);
   };
@@ -248,6 +259,8 @@ export function JobDetail() {
     );
   }
 
+  const pay = formatPay(job);
+
   return (
     <div className="p-8">
       <button onClick={() => navigate('/jobs')} className="mb-6 text-blue-600 hover:text-blue-700 font-medium">
@@ -292,19 +305,34 @@ export function JobDetail() {
               {job.company && (
                 <div>
                   <p className="text-xs text-gray-500 mb-0.5">Company</p>
-                  <p className="font-medium text-gray-900">{job.company.name}</p>
+                  <Link to={`/companies/${job.company.id}`} className="font-medium text-gray-900 hover:text-blue-600">
+                    {job.company.name}
+                  </Link>
+                </div>
+              )}
+              {job.contact && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Hiring Manager</p>
+                  <p className="font-medium text-gray-900">
+                    {job.contact.full_name}
+                    {job.contact.job_title && <span className="font-normal text-gray-500"> · {job.contact.job_title}</span>}
+                  </p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Type</p>
+                <p className="font-medium text-gray-900">{typeLine(job)}</p>
+              </div>
+              {pay && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">{job.employment_type === 'Contract' ? 'Rate' : 'Salary'}</p>
+                  <p className="font-medium text-gray-900">{pay}</p>
                 </div>
               )}
               {job.location && (
                 <div>
                   <p className="text-xs text-gray-500 mb-0.5">Location</p>
                   <p className="font-medium text-gray-900">{job.location}</p>
-                </div>
-              )}
-              {job.salary_range && (
-                <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Salary Range</p>
-                  <p className="font-medium text-gray-900">{job.salary_range}</p>
                 </div>
               )}
               {job.description && (

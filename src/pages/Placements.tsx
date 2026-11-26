@@ -362,7 +362,7 @@ function PlacementModal({ placement, userId, onClose, onSaved }: {
       .select(`
         id, stage,
         candidate:candidate_id (id, full_name),
-        job:job_id (id, title, company:company_id (id, name))
+        job:job_id (id, title, salary_max, pay_period, company:company_id (id, name, fee_percentage))
       `)
       .eq('stage', 'Placed');
     setApplications(data || []);
@@ -375,6 +375,9 @@ function PlacementModal({ placement, userId, onClose, onSaved }: {
       setCandidateId(app.candidate?.id || '');
       setJobId(app.job?.id || '');
       setCompanyId(app.job?.company?.id || '');
+      // Pre-fill from the job and the client's terms, only where nothing is entered yet.
+      if (!feePercentage && app.job?.company?.fee_percentage != null) setFeePercentage(String(app.job.company.fee_percentage));
+      if (!salary && app.job?.pay_period === 'Year' && app.job?.salary_max != null) setSalary(String(app.job.salary_max));
     }
   };
 

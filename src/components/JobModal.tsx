@@ -1,82 +1,128 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { companiesService } from '../services/companies';
+import { contactsService } from '../services/contacts';
 import type { Database } from '../lib/database.types';
-import { JOB_STATUSES, type JobStatus } from '../lib/enums';
+import {
+  EMPLOYMENT_TYPES, JOB_STATUSES, PAY_PERIODS,
+  type EmploymentType, type JobStatus, type PayPeriod,
+} from '../lib/enums';
+import { COMMON_CURRENCIES, OTHER_CURRENCIES } from '../lib/pay';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
+type Company = Awaited<ReturnType<typeof companiesService.getAll>>[number];
+type Contact = Awaited<ReturnType<typeof contactsService.getByCompany>>[number];
+
+export type JobFormData = Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>;
 
 interface JobModalProps {
   isOpen: boolean;
-  job?: Job & { company?: { id: string; name: string } };
+  job?: Job;
   // Pre-fills the company when adding a job from a company page.
   defaultCompanyId?: string;
   onClose: () => void;
-  onSubmit: (data: Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => Promise<void>;
+  onSubmit: (data: JobFormData) => Promise<void>;
+}
+
+const INPUT = 'w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent';
+
+// Contract work is quoted as a day rate; perm and fixed-term as a salary.
+const defaultPeriod = (type: EmploymentType): PayPeriod => (type === 'Contract' ? 'Day' : 'Year');
+
+function toNumber(value: string): number | null {
+  return value.trim() === '' ? null : Number(value);
 }
 
 export function JobModal({ isOpen, job, defaultCompanyId, onClose, onSubmit }: JobModalProps) {
   const [title, setTitle] = useState('');
   const [companyId, setCompanyId] = useState('');
-  const [description, setDescription] = useState('');
-  const [status, setStatus] = useState<JobStatus>('Open');
+  const [contactId, setContactId] = useState('');
+  const [employmentType, setEmploymentType] = useState<EmploymentType>('Permanent');
+  const [openings, setOpenings] = useState('1');
+  const [salaryMin, setSalaryMin] = useState('');
+  const [salaryMax, setSalaryMax] = useState('');
+  const [currency, setCurrency] = useState('GBP');
+  const [payPeriod, setPayPeriod] = useState<PayPeriod>('Year');
   const [location, setLocation] = useState('');
-  const [salaryRange, setSalaryRange] = useState('');
-  const [companies, setCompanies] = useState<any[]>([]);
+  const [status, setStatus] = useState<JobStatus>('Open');
+  const [description, setDescription] = useState('');
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isOpen) {
-      loadCompanies();
-    }
+    if (!isOpen) return;
+    companiesService.getAll()
+      .then(setCompanies)
+      .catch(err => setError(err instanceof Error ? err.message : 'Failed to load companies'));
   }, [isOpen]);
 
   useEffect(() => {
-    if (job) {
-      setTitle(job.title);
-      setCompanyId(job.company_id || '');
-      setDescription(job.description || '');
-      setStatus((job.status as JobStatus) ?? 'Open');
-      setLocation(job.location || '');
-      setSalaryRange(job.salary_range || '');
-    } else {
-      setTitle('');
-      setCompanyId(defaultCompanyId ?? '');
-      setDescription('');
-      setStatus('Open');
-      setLocation('');
-      setSalaryRange('');
-    }
+    setTitle(job?.title ?? '');
+    setCompanyId(job?.company_id ?? defaultCompanyId ?? '');
+    setContactId(job?.contact_id ?? '');
+    setEmploymentType((job?.employment_type as EmploymentType) ?? 'Permanent');
+    setOpenings(String(job?.openings ?? 1));
+    setSalaryMin(job?.salary_min?.toString() ?? '');
+    setSalaryMax(job?.salary_max?.toString() ?? '');
+    setCurrency(job?.salary_currency ?? 'GBP');
+    setPayPeriod((job?.pay_period as PayPeriod) ?? 'Year');
+    setLocation(job?.location ?? '');
+    setStatus((job?.status as JobStatus) ?? 'Open');
+    setDescription(job?.description ?? '');
     setError('');
   }, [job, isOpen, defaultCompanyId]);
 
-  const loadCompanies = async () => {
-    try {
-      const data = await companiesService.getAll();
-      setCompanies(data || []);
-    } catch (err) {
-      console.error('Failed to load companies:', err);
+  // The hiring manager is one of the chosen company's contacts.
+  useEffect(() => {
+    if (!isOpen || !companyId) {
+      setContacts([]);
+      return;
     }
+    contactsService.getByCompany(companyId)
+      .then(setContacts)
+      .catch(err => setError(err instanceof Error ? err.message : 'Failed to load contacts'));
+  }, [isOpen, companyId]);
+
+  const handleCompanyChange = (id: string) => {
+    setCompanyId(id);
+    setContactId(''); // a contact from the previous company can't be this job's hiring manager
+  };
+
+  const handleTypeChange = (type: EmploymentType) => {
+    setEmploymentType(type);
+    setPayPeriod(defaultPeriod(type));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const min = toNumber(salaryMin);
+    const max = toNumber(salaryMax);
+    if (min !== null && max !== null && min > max) {
+      setError('The lower figure is above the upper one.');
+      return;
+    }
     setError('');
     setLoading(true);
-
     try {
+      const hasPay = min !== null || max !== null;
       await onSubmit({
         title,
-        company_id: companyId || null,
-        description: description || null,
-        status,
+        company_id: companyId,
+        contact_id: contactId || null,
+        employment_type: employmentType,
+        openings: Number(openings),
+        salary_min: min,
+        salary_max: max,
+        salary_currency: hasPay ? currency : null,
+        pay_period: payPeriod,
         location: location || null,
-        salary_range: salaryRange || null,
-        created_by: job?.created_by || null,
-        assigned_to: job?.assigned_to || null,
+        status,
+        description: description || null,
+        created_by: job?.created_by ?? null,
+        assigned_to: job?.assigned_to ?? null,
       });
-
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save job');
@@ -86,6 +132,8 @@ export function JobModal({ isOpen, job, defaultCompanyId, onClose, onSubmit }: J
   };
 
   if (!isOpen) return null;
+
+  const payLabel = employmentType === 'Contract' ? 'Rate' : 'Salary';
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -107,93 +155,110 @@ export function JobModal({ isOpen, job, defaultCompanyId, onClose, onSubmit }: J
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Job Title
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Job Title *</label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className={INPUT}
               placeholder="e.g., Senior Software Engineer"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company
-            </label>
-            <select
-              value={companyId}
-              onChange={(e) => setCompanyId(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              <option value="">Select a company (optional)</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>
-                  {company.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Job description and requirements"
-              rows={4}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Location
-              </label>
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., San Francisco, CA"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Company *</label>
+              <select value={companyId} onChange={(e) => handleCompanyChange(e.target.value)} required className={INPUT}>
+                <option value="">Select a company…</option>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>{company.name}</option>
+                ))}
+              </select>
             </div>
-
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Salary Range
-              </label>
-              <input
-                type="text"
-                value={salaryRange}
-                onChange={(e) => setSalaryRange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="e.g., $100k - $150k"
-              />
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hiring Manager</label>
+              <select
+                value={contactId}
+                onChange={(e) => setContactId(e.target.value)}
+                disabled={!companyId}
+                className={`${INPUT} disabled:bg-gray-50 disabled:text-gray-400`}
+              >
+                <option value="">{companyId && contacts.length === 0 ? 'No contacts at this company' : 'None'}</option>
+                {contacts.map((contact) => (
+                  <option key={contact.id} value={contact.id}>
+                    {contact.full_name}{contact.job_title ? ` — ${contact.job_title}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <select value={employmentType} onChange={(e) => handleTypeChange(e.target.value as EmploymentType)} className={INPUT}>
+                {EMPLOYMENT_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Openings</label>
+              <input type="number" min={1} value={openings} onChange={(e) => setOpenings(e.target.value)} required className={INPUT} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select value={status} onChange={(e) => setStatus(e.target.value as JobStatus)} className={INPUT}>
+                {JOB_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+              </select>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Status
-            </label>
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value as JobStatus)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            >
-              {JOB_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{payLabel}</label>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              <input
+                type="number" min={0} value={salaryMin} onChange={(e) => setSalaryMin(e.target.value)}
+                className={INPUT} placeholder={employmentType === 'Contract' ? 'From, e.g. 500' : 'From, e.g. 80000'}
+              />
+              <input
+                type="number" min={0} value={salaryMax} onChange={(e) => setSalaryMax(e.target.value)}
+                className={INPUT} placeholder={employmentType === 'Contract' ? 'To, e.g. 600' : 'To, e.g. 95000'}
+              />
+              <select value={currency} onChange={(e) => setCurrency(e.target.value)} className={INPUT}>
+                <optgroup label="Common">
+                  {COMMON_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </optgroup>
+                <optgroup label="Other">
+                  {OTHER_CURRENCIES.map((c) => <option key={c} value={c}>{c}</option>)}
+                </optgroup>
+              </select>
+              <select value={payPeriod} onChange={(e) => setPayPeriod(e.target.value as PayPeriod)} className={INPUT}>
+                {PAY_PERIODS.map((p) => <option key={p} value={p}>per {p.toLowerCase()}</option>)}
+              </select>
+            </div>
+            <p className="mt-1 text-xs text-gray-500">Leave blank if unknown. One figure is fine.</p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <input
+              type="text"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className={INPUT}
+              placeholder="e.g., Berlin (hybrid)"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className={INPUT}
+              placeholder="Job description and requirements"
+              rows={4}
+            />
           </div>
 
           <div className="flex gap-3 pt-4">

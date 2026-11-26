@@ -8,7 +8,9 @@
 //
 // Keep in sync with:
 //   candidates_status_check, jobs_status_check,
-//   tasks_status_check, tasks_related_entity_type_check
+//   tasks_status_check, tasks_related_entity_type_check,
+//   job_applications_stage_check, jobs_employment_type_check,
+//   jobs_pay_period_check, companies_status_check
 // ============================================================
 
 // The candidate's relationship with the agency. Progress on a specific
@@ -25,6 +27,12 @@ export type ApplicationStage = 'Applied' | 'Screening' | 'Interview' | 'Offer' |
 export const APPLICATION_STAGES: ApplicationStage[] = ['Applied', 'Screening', 'Interview', 'Offer', 'Placed', 'Rejected'];
 export type JobStatus = 'Open' | 'Closed' | 'On Hold';
 export const JOB_STATUSES: JobStatus[] = ['Open', 'Closed', 'On Hold'];
+export type EmploymentType = 'Permanent' | 'Contract' | 'Fixed Term';
+export const EMPLOYMENT_TYPES: EmploymentType[] = ['Permanent', 'Contract', 'Fixed Term'];
+export type PayPeriod = 'Year' | 'Day' | 'Hour';
+export const PAY_PERIODS: PayPeriod[] = ['Year', 'Day', 'Hour'];
+export type CompanyStatus = 'Prospect' | 'Client' | 'Past';
+export const COMPANY_STATUSES: CompanyStatus[] = ['Prospect', 'Client', 'Past'];
 export type TaskStatus = 'Pending' | 'In Progress' | 'Completed';
 export type EntityType = 'candidate' | 'company' | 'job';
 
@@ -80,4 +88,15 @@ export const JOB_STATUS_COLORS: Record<JobStatus, string> = {
 
 export function jobStatusBadgeClass(value: string | null): string {
   return JOB_STATUS_COLORS[value as JobStatus] ?? 'bg-gray-100 text-gray-800';
+}
+
+
+export const COMPANY_STATUS_COLORS: Record<CompanyStatus, string> = {
+  Prospect: 'bg-sky-100 text-sky-800',
+  Client: 'bg-green-100 text-green-800',
+  Past: 'bg-gray-100 text-gray-800',
+};
+
+export function companyStatusBadgeClass(value: string): string {
+  return COMPANY_STATUS_COLORS[value as CompanyStatus] ?? 'bg-gray-100 text-gray-800';
 }

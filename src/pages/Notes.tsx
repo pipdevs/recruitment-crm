@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { StickyNote, Trash2, Building2, Users, Briefcase } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { CandidatePicker } from '../components/CandidatePicker';
+import { getOrganisationId } from '../lib/organisation';
 import { supabase } from '../lib/supabase';
 
 interface Note {
@@ -136,13 +137,13 @@ export function Notes() {
   .eq('id', user.id)
   .single();
 
-  const { error } = await supabase.from('notes').insert([{
-    content: newNote,
-    entity_type: entityType,
-    entity_id: entityId,
-    created_by: user.id,
-    organisation_id: profileData?.organisation_id,
-  }]);
+    const { error } = await supabase.from('notes').insert([{
+      content: newNote,
+      entity_type: entityType,
+      entity_id: entityId,
+      created_by: user.id,
+      organisation_id: await getOrganisationId(),
+    }]);
 
       if (error) throw error;
       setNewNote('');

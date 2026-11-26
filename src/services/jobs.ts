@@ -1,15 +1,9 @@
 import { supabase } from '../lib/supabase';
+import { getOrganisationId } from '../lib/organisation';
 import type { Database } from '../lib/database.types';
 
 type JobInsert = Database['public']['Tables']['jobs']['Insert'];
 type JobUpdate = Database['public']['Tables']['jobs']['Update'];
-
-const getOrgId = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  const { data } = await supabase.from('profiles').select('organisation_id').eq('id', user.id).single();
-  return data?.organisation_id;
-};
 
 export const jobsService = {
   async getAll() {
@@ -22,7 +16,7 @@ export const jobsService = {
   },
 
   async create(job: JobInsert) {
-    const organisation_id = await getOrgId();
+    const organisation_id = await getOrganisationId();
     const { data, error } = await supabase
       .from('jobs')
       .insert([{ ...job, organisation_id }])
@@ -82,7 +76,7 @@ async deleteNote(noteId: string) {
   },
 
   async addNote(entityId: string, content: string, createdBy: string) {
-    const organisation_id = await getOrgId();
+    const organisation_id = await getOrganisationId();
     const { error } = await supabase
       .from('notes')
       .insert([{

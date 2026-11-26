@@ -1,15 +1,9 @@
 import { supabase } from '../lib/supabase';
+import { getOrganisationId } from '../lib/organisation';
 import type { Database } from '../lib/database.types';
 
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
 type TaskUpdate = Database['public']['Tables']['tasks']['Update'];
-
-const getOrgId = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  const { data } = await supabase.from('profiles').select('organisation_id').eq('id', user.id).single();
-  return data?.organisation_id;
-};
 
 export const tasksService = {
   async getAll() {
@@ -22,7 +16,7 @@ export const tasksService = {
   },
 
   async create(task: TaskInsert) {
-    const organisation_id = await getOrgId();
+    const organisation_id = await getOrganisationId();
     const { data, error } = await supabase
       .from('tasks')
       .insert([{ ...task, organisation_id }])

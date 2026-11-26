@@ -1,15 +1,9 @@
 import { supabase } from '../lib/supabase';
+import { getOrganisationId } from '../lib/organisation';
 import type { Database } from '../lib/database.types';
 
 type JobApplicationInsert = Database['public']['Tables']['job_applications']['Insert'];
 type JobApplicationUpdate = Database['public']['Tables']['job_applications']['Update'];
-
-const getOrgId = async () => {
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error('Not authenticated');
-  const { data } = await supabase.from('profiles').select('organisation_id').eq('id', user.id).single();
-  return data?.organisation_id;
-};
 
 export const jobApplicationsService = {
   async getAll() {
@@ -56,7 +50,7 @@ export const jobApplicationsService = {
   },
 
   async create(application: JobApplicationInsert) {
-    const organisation_id = await getOrgId();
+    const organisation_id = await await getOrganisationId();
     const { data, error } = await supabase
       .from('job_applications')
       .insert([{ ...application, organisation_id }])

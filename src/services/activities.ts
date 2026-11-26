@@ -1,5 +1,6 @@
 import type { Json } from '../lib/database.types';
 import { supabase } from '../lib/supabase';
+import { getOrganisationId } from '../lib/organisation';
 
 export type EntityType = 'candidate' | 'company' | 'job' | 'task';
 export type ActivityType = 'note_added' | 'status_changed' | 'stage_moved' | 'task_completed' | 'task_updated';
@@ -27,9 +28,7 @@ export const activitiesService = {
     authorId: string,
     metadata?: Record<string, unknown>
   ) {
-    const { data: organisationId, error: organisationError } = await supabase.rpc('get_user_organisation_id');
-    if (organisationError) throw organisationError;
-    if (!organisationId) throw new Error('Cannot record activity: no organisation for the current user');
+    const organisationId = await getOrganisationId();
 
     const { data, error } = await supabase
       .from('activities')

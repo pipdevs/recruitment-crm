@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
 import { CandidateModal, type CandidateFormData } from '../components/CandidateModal';
 import { CandidateDocuments } from '../components/CandidateDocuments';
+import { CandidateJobs } from '../components/CandidateJobs';
 import { ActivityPanel } from '../components/ActivityPanel';
 import { candidatesService } from '../services/candidates';
 import { activitiesService } from '../services/activities';
@@ -374,8 +375,9 @@ export function CandidateDetail() {
               )}
             </div>
           </div>
+          <CandidateJobs candidateId={candidate.id} />
           <CandidateDocuments candidateId={candidate.id} />
-        </div>
+          </div>
 
         <div className="lg:col-span-2">
           <ActivityPanel

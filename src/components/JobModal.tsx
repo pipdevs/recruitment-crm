@@ -2,20 +2,20 @@ import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { companiesService } from '../services/companies';
 import type { Database } from '../lib/database.types';
-import type { JobStatus } from '../lib/enums';
+import { JOB_STATUSES, type JobStatus } from '../lib/enums';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
-
-const STATUSES: JobStatus[] = ['Open', 'Closed', 'On Hold'];
 
 interface JobModalProps {
   isOpen: boolean;
   job?: Job & { company?: { id: string; name: string } };
+  // Pre-fills the company when adding a job from a company page.
+  defaultCompanyId?: string;
   onClose: () => void;
   onSubmit: (data: Omit<Job, 'id' | 'created_at' | 'updated_at' | 'organisation_id'>) => Promise<void>;
 }
 
-export function JobModal({ isOpen, job, onClose, onSubmit }: JobModalProps) {
+export function JobModal({ isOpen, job, defaultCompanyId, onClose, onSubmit }: JobModalProps) {
   const [title, setTitle] = useState('');
   const [companyId, setCompanyId] = useState('');
   const [description, setDescription] = useState('');
@@ -42,14 +42,14 @@ export function JobModal({ isOpen, job, onClose, onSubmit }: JobModalProps) {
       setSalaryRange(job.salary_range || '');
     } else {
       setTitle('');
-      setCompanyId('');
+      setCompanyId(defaultCompanyId ?? '');
       setDescription('');
       setStatus('Open');
       setLocation('');
       setSalaryRange('');
     }
     setError('');
-  }, [job, isOpen]);
+  }, [job, isOpen, defaultCompanyId]);
 
   const loadCompanies = async () => {
     try {
@@ -188,7 +188,7 @@ export function JobModal({ isOpen, job, onClose, onSubmit }: JobModalProps) {
               onChange={(e) => setStatus(e.target.value as JobStatus)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {STATUSES.map((s) => (
+              {JOB_STATUSES.map((s) => (
                 <option key={s} value={s}>
                   {s}
                 </option>

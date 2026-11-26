@@ -24,6 +24,7 @@ export function isCandidateStatus(value: string | null | undefined): value is Ca
 export type ApplicationStage = 'Applied' | 'Screening' | 'Interview' | 'Offer' | 'Placed' | 'Rejected';
 export const APPLICATION_STAGES: ApplicationStage[] = ['Applied', 'Screening', 'Interview', 'Offer', 'Placed', 'Rejected'];
 export type JobStatus = 'Open' | 'Closed' | 'On Hold';
+export const JOB_STATUSES: JobStatus[] = ['Open', 'Closed', 'On Hold'];
 export type TaskStatus = 'Pending' | 'In Progress' | 'Completed';
 export type EntityType = 'candidate' | 'company' | 'job';
 
@@ -69,4 +70,14 @@ export const PIPELINE_DOT_COLORS: Record<PipelineValue, string> = {
 // is text in Postgres, and activity metadata is Json.
 export function pipelineBadgeClass(value: string): string {
   return PIPELINE_BADGE_COLORS[value as PipelineValue] ?? 'bg-gray-100 text-gray-800';
+}
+
+export const JOB_STATUS_COLORS: Record<JobStatus, string> = {
+  Open: 'bg-green-100 text-green-800',
+  Closed: 'bg-gray-100 text-gray-800',
+  'On Hold': 'bg-yellow-100 text-yellow-800',
+};
+
+export function jobStatusBadgeClass(value: string | null): string {
+  return JOB_STATUS_COLORS[value as JobStatus] ?? 'bg-gray-100 text-gray-800';
 }

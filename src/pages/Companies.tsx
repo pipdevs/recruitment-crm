@@ -8,6 +8,7 @@ import { companiesService } from '../services/companies';
 import type { Database } from '../lib/database.types';
 import { ImportModal } from '../components/ImportModal';
 import { CompanyContacts } from '../components/CompanyContacts';
+import { CompanyJobs } from '../components/CompanyJobs';
 
 type Company = Database['public']['Tables']['companies']['Row'];
 
@@ -282,6 +283,7 @@ export function CompanyDetail() {
               ) : null}
             </div>
           </div>
+          <CompanyJobs companyId={company.id} />
           <CompanyContacts companyId={company.id} />
         </div>
 

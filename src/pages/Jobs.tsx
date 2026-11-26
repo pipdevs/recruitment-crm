@@ -10,16 +10,9 @@ import type { Database } from '../lib/database.types';
 import { usePlanLimits } from '../hooks/usePlanLimits';
 import { UpgradePrompt } from '../components/UpgradePrompt';
 import { JobPipeline } from '../components/JobPipeline';
+import { JOB_STATUSES, jobStatusBadgeClass, type JobStatus } from '../lib/enums';
 
 type Job = Database['public']['Tables']['jobs']['Row'];
-
-const STATUS_COLORS: Record<string, string> = {
-  Open: 'bg-green-100 text-green-800',
-  Closed: 'bg-gray-100 text-gray-800',
-  'On Hold': 'bg-yellow-100 text-yellow-800',
-};
-
-const STATUSES = ['Open', 'Closed', 'On Hold'] as const;
 
 // ── List View ─────────────────────────────────────────────
 export function JobList() {
@@ -124,7 +117,7 @@ export function JobList() {
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-2">
                     <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[job.status]}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${jobStatusBadgeClass(job.status)}`}>
                       {job.status}
                     </span>
                   </div>
@@ -219,7 +212,7 @@ export function JobDetail() {
     navigate('/jobs');
   };
 
-  const handleStatusChange = async (newStatus: typeof STATUSES[number]) => {
+  const handleStatusChange = async (newStatus: JobStatus) => {
     if (!job) return;
     setStatusUpdating(true);
     try {
@@ -287,11 +280,11 @@ export function JobDetail() {
             <div className="mb-4">
               <select
                 value={job.status}
-                onChange={e => handleStatusChange(e.target.value as any)}
+                onChange={e => handleStatusChange(e.target.value as JobStatus)}
                 disabled={statusUpdating}
-                className={`w-full px-3 py-2 border-0 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 ${STATUS_COLORS[job.status]}`}
+                className={`w-full px-3 py-2 border-0 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 ${jobStatusBadgeClass(job.status)}`}
               >
-                {STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                {JOB_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
 

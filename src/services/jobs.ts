@@ -25,6 +25,17 @@ export const jobsService = {
     return data;
   },
 
+    // A company's jobs with how many candidates are on each.
+  async getByCompany(companyId: string) {
+    const { data, error } = await supabase
+      .from('jobs')
+      .select('id, title, status, location, job_applications(count)')
+      .eq('company_id', companyId)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    return data;
+  },
+
   async create(job: JobInsert) {
     const organisation_id = await getOrganisationId();
     const { data, error } = await supabase

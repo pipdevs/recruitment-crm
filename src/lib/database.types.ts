@@ -273,6 +273,7 @@ export type Database = {
           is_primary: boolean
           job_title: string | null
           linkedin_url: string | null
+          name_source: string | null
           organisation_id: string | null
           phone: string | null
           updated_at: string | null
@@ -287,6 +288,7 @@ export type Database = {
           is_primary?: boolean
           job_title?: string | null
           linkedin_url?: string | null
+          name_source?: string | null
           organisation_id?: string | null
           phone?: string | null
           updated_at?: string | null
@@ -301,6 +303,7 @@ export type Database = {
           is_primary?: boolean
           job_title?: string | null
           linkedin_url?: string | null
+          name_source?: string | null
           organisation_id?: string | null
           phone?: string | null
           updated_at?: string | null

@@ -10,7 +10,7 @@ interface Activity {
   message: string;
   metadata?: Json | null;
   author?: { id: string; full_name: string } | null;
-  created_at: string | null;
+  occurred_at: string;
 }
 
 interface ActivityFeedProps {
@@ -20,7 +20,7 @@ interface ActivityFeedProps {
 }
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
-  note_added: <MessageSquare className="w-4 h-4" />,
+  note: <MessageSquare className="w-4 h-4" />,
   status_changed: <ArrowRight className="w-4 h-4" />,
   stage_moved: <ArrowRight className="w-4 h-4" />,
   task_completed: <CheckCircle2 className="w-4 h-4" />,
@@ -28,7 +28,7 @@ const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const ACTIVITY_COLORS: Record<string, string> = {
-  note_added: 'text-blue-600 bg-blue-50',
+  note: 'text-blue-600 bg-blue-50',
   status_changed: 'text-orange-600 bg-orange-50',
   stage_moved: 'text-purple-600 bg-purple-50',
   task_completed: 'text-green-600 bg-green-50',
@@ -130,20 +130,13 @@ export function ActivityFeed({ entityType, entityId }: ActivityFeedProps) {
                   </p>
                 </div>
                 <p className="text-xs text-gray-500 flex-shrink-0 whitespace-nowrap">
-                  {formatDate(activity.created_at ?? '')}
+                  {formatDate(activity.occurred_at)}
                 </p>
               </div>
 
           {(() => {
             const meta = activity.metadata as Record<string, unknown> | null;
             if (!meta) return null;
-            if (activity.activity_type === 'note_added' && meta.note_content != null) {
-              return (
-                <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <p className="text-sm text-gray-700">{String(meta.note_content)}</p>
-                </div>
-              );
-            }
             if (activity.activity_type === 'status_changed' || activity.activity_type === 'stage_moved') {
               const from = String(meta.old_status ?? meta.old_stage);
               const to = String(meta.new_status ?? meta.new_stage);

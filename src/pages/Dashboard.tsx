@@ -34,7 +34,7 @@ export function Dashboard() {
         supabase.from('companies').select('id', { count: 'exact', head: true }),
         supabase.from('jobs').select('id', { count: 'exact', head: true }).eq('status', 'Open'),
         supabase.from('tasks').select('id', { count: 'exact', head: true }).eq('status', 'Pending'),
-        supabase.from('activities').select('entity_id').order('created_at', { ascending: false }).limit(1),
+        supabase.from('activities').select('candidate_id').not('candidate_id', 'is', null).order('occurred_at', { ascending: false }).limit(1),
       ]);
 
       setStats({
@@ -45,7 +45,7 @@ export function Dashboard() {
       });
 
       if (activityRes.data && activityRes.data.length > 0) {
-        setRecentEntityId(activityRes.data[0].entity_id);
+        setRecentEntityId(activityRes.data[0].candidate_id);
       }
     } catch (err) {
       console.error('Failed to load dashboard stats:', err);

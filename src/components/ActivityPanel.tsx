@@ -4,24 +4,18 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import { ActivityFeed } from './ActivityFeed';
 import { tasksService } from '../services/tasks';
+import { activitiesService, type EntityType } from '../services/activities';
 
-type EntityType = 'candidate' | 'company' | 'job';
 type TaskStatus = 'Pending' | 'In Progress' | 'Completed';
 
 interface ActivityPanelProps {
   entityType: EntityType;
   entityId: string;
-  addNote: (content: string, userId: string) => Promise<void>;
-  getNotes: (entityId: string) => Promise<any[]>;
-  deleteNote: (noteId: string) => Promise<void>;
 }
 
 export function ActivityPanel({
   entityType,
   entityId,
-  addNote,
-  getNotes,
-  deleteNote,
 }: ActivityPanelProps) {
   const { user } = useAuth();
   const [tab, setTab] = useState<'notes' | 'tasks' | 'activity'>('notes');
@@ -41,7 +35,7 @@ export function ActivityPanel({
   const loadNotes = async () => {
     try {
       setLoadingNotes(true);
-      const data = await getNotes(entityId);
+      const data = await activitiesService.getNotes(entityType, entityId);
       setNotes(data || []);
     } catch (err) {
       console.error('Failed to load notes:', err);
@@ -71,7 +65,7 @@ export function ActivityPanel({
     if (!newNote.trim() || !user) return;
     setAddingNote(true);
     try {
-      await addNote(newNote, user.id);
+      await activitiesService.createNote(entityType, entityId, newNote, user.id);
       setNewNote('');
       await loadNotes();
     } catch (err) {
@@ -83,7 +77,7 @@ export function ActivityPanel({
 
   const handleDeleteNote = async (noteId: string) => {
     try {
-      await deleteNote(noteId);
+      await activitiesService.deleteNote(noteId);
       setNotes(notes.filter(n => n.id !== noteId));
     } catch (err) {
       console.error('Failed to delete note:', err);
@@ -204,11 +198,11 @@ export function ActivityPanel({
                   <div key={note.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
                     <div className="flex justify-between items-start mb-1.5">
                       <span className="text-xs font-medium text-gray-600">
-                        {note.creator?.full_name || 'Unknown'}
+                        {note.author?.full_name || 'Unknown'}
                       </span>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400">
-                          {note.created_at ? new Date(note.created_at).toLocaleDateString() : ''}
+                          {new Date(note.occurred_at).toLocaleDateString()}
                         </span>
                         <button
                           onClick={() => handleDeleteNote(note.id)}
@@ -218,7 +212,7 @@ export function ActivityPanel({
                         </button>
                       </div>
                     </div>
-                    <p className="text-sm text-gray-700 leading-relaxed">{note.content}</p>
+                    <p className="text-sm text-gray-700 leading-relaxed">{note.message}</p>
                   </div>
                 ))}
               </div>

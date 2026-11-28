@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { StickyNote, Trash2, Building2, Users, Briefcase } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { CandidatePicker } from '../components/CandidatePicker';
-import { getOrganisationId } from '../lib/organisation';
 import { supabase } from '../lib/supabase';
+import { activitiesService, type EntityType } from '../services/activities';
 
 interface Note {
   id: string;
@@ -26,6 +26,25 @@ const ENTITY_COLORS: Record<string, string> = {
   company: 'bg-green-100 text-green-700',
   job: 'bg-orange-100 text-orange-700',
 };
+
+type NoteRow = Awaited<ReturnType<typeof activitiesService.getAllNotes>>[number];
+
+// A note links to exactly one record; take whichever link is set.
+function toNote(row: NoteRow): Note {
+  const [entity_type, entity_id, entity_name]: [EntityType, string, string] =
+    row.candidate ? ['candidate', row.candidate.id, row.candidate.full_name]
+    : row.company ? ['company', row.company.id, row.company.name]
+    : ['job', row.job!.id, row.job!.title];
+  return {
+    id: row.id,
+    content: row.message,
+    entity_type,
+    entity_id,
+    entity_name,
+    created_at: row.occurred_at,
+    creator: row.author,
+  };
+}
 
 export function Notes() {
   const { user } = useAuth();
@@ -52,57 +71,13 @@ export function Notes() {
   const loadNotes = async () => {
     try {
       setLoading(true);
-      let query = supabase
-        .from('notes')
-        .select('id, content, entity_type, entity_id, created_at, creator:created_by(full_name)')
-        .order('created_at', { ascending: false });
-
-      if (filterType !== 'all') {
-        query = query.eq('entity_type', filterType);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-
-      // Enrich with entity names
-      const enriched = await enrichNotesWithEntityNames(data || []);
-      setNotes(enriched);
+      const data = await activitiesService.getAllNotes(filterType === 'all' ? undefined : filterType);
+      setNotes(data.map(toNote));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load notes');
     } finally {
       setLoading(false);
     }
-  };
-
-  const enrichNotesWithEntityNames = async (notes: any[]): Promise<Note[]> => {
-    if (notes.length === 0) return [];
-
-    const candidateIds = notes.filter(n => n.entity_type === 'candidate').map(n => n.entity_id);
-    const companyIds = notes.filter(n => n.entity_type === 'company').map(n => n.entity_id);
-    const jobIds = notes.filter(n => n.entity_type === 'job').map(n => n.entity_id);
-
-    const [candidates, companies, jobs] = await Promise.all([
-      candidateIds.length > 0
-        ? supabase.from('candidates').select('id, full_name').in('id', candidateIds)
-        : { data: [] },
-      companyIds.length > 0
-        ? supabase.from('companies').select('id, name').in('id', companyIds)
-        : { data: [] },
-      jobIds.length > 0
-        ? supabase.from('jobs').select('id, title').in('id', jobIds)
-        : { data: [] },
-    ]);
-
-    const nameMap: Record<string, string> = {};
-    (candidates.data || []).forEach((c: any) => nameMap[c.id] = c.full_name);
-    (companies.data || []).forEach((c: any) => nameMap[c.id] = c.name);
-    (jobs.data || []).forEach((j: any) => nameMap[j.id] = j.title);
-
-    return notes.map(note => ({
-      ...note,
-      creator: Array.isArray(note.creator) ? note.creator[0] : note.creator,
-      entity_name: nameMap[note.entity_id] || 'Unknown',
-    }));
   };
 
   const loadEntities = async (type: 'company' | 'job') => {
@@ -131,21 +106,7 @@ export function Notes() {
     if (!newNote.trim() || !entityId || !user) return;
     setAddingNote(true);
     try {
-      const { data: profileData } = await supabase
-  .from('profiles')
-  .select('organisation_id')
-  .eq('id', user.id)
-  .single();
-
-    const { error } = await supabase.from('notes').insert([{
-      content: newNote,
-      entity_type: entityType,
-      entity_id: entityId,
-      created_by: user.id,
-      organisation_id: await getOrganisationId(),
-    }]);
-
-      if (error) throw error;
+      await activitiesService.createNote(entityType, entityId, newNote, user.id);
       setNewNote('');
       await loadNotes();
     } catch (err) {
@@ -158,8 +119,7 @@ export function Notes() {
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this note?')) return;
     try {
-      const { error } = await supabase.from('notes').delete().eq('id', id);
-      if (error) throw error;
+      await activitiesService.deleteNote(id);
       setNotes(notes.filter(n => n.id !== id));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete note');

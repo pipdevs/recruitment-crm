@@ -18,35 +18,53 @@ export type Database = {
         Row: {
           activity_type: string
           author: string | null
-          created_at: string | null
-          entity_id: string
-          entity_type: string
+          candidate_id: string | null
+          company_id: string | null
+          contact_id: string | null
+          created_at: string
+          external_id: string | null
           id: string
+          job_application_id: string | null
+          job_id: string | null
           message: string
           metadata: Json | null
-          organisation_id: string | null
+          occurred_at: string
+          organisation_id: string
+          thread_id: string | null
         }
         Insert: {
           activity_type: string
           author?: string | null
-          created_at?: string | null
-          entity_id: string
-          entity_type: string
+          candidate_id?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          external_id?: string | null
           id?: string
+          job_application_id?: string | null
+          job_id?: string | null
           message: string
           metadata?: Json | null
-          organisation_id?: string | null
+          occurred_at?: string
+          organisation_id: string
+          thread_id?: string | null
         }
         Update: {
           activity_type?: string
           author?: string | null
-          created_at?: string | null
-          entity_id?: string
-          entity_type?: string
+          candidate_id?: string | null
+          company_id?: string | null
+          contact_id?: string | null
+          created_at?: string
+          external_id?: string | null
           id?: string
+          job_application_id?: string | null
+          job_id?: string | null
           message?: string
           metadata?: Json | null
-          organisation_id?: string | null
+          occurred_at?: string
+          organisation_id?: string
+          thread_id?: string | null
         }
         Relationships: [
           {
@@ -54,6 +72,41 @@ export type Database = {
             columns: ["author"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_candidate_id_fkey"
+            columns: ["candidate_id"]
+            isOneToOne: false
+            referencedRelation: "candidates"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "contacts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_job_application_id_fkey"
+            columns: ["job_application_id"]
+            isOneToOne: false
+            referencedRelation: "job_applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "activities_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
             referencedColumns: ["id"]
           },
           {
@@ -543,64 +596,6 @@ export type Database = {
           },
           {
             foreignKeyName: "jobs_organisation_id_fkey"
-            columns: ["organisation_id"]
-            isOneToOne: false
-            referencedRelation: "organisations"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      notes: {
-        Row: {
-          assigned_to: string | null
-          content: string
-          created_at: string | null
-          created_by: string | null
-          entity_id: string
-          entity_type: string
-          id: string
-          organisation_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          assigned_to?: string | null
-          content: string
-          created_at?: string | null
-          created_by?: string | null
-          entity_id: string
-          entity_type: string
-          id?: string
-          organisation_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          assigned_to?: string | null
-          content?: string
-          created_at?: string | null
-          created_by?: string | null
-          entity_id?: string
-          entity_type?: string
-          id?: string
-          organisation_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "notes_assigned_to_fkey"
-            columns: ["assigned_to"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notes_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notes_organisation_id_fkey"
             columns: ["organisation_id"]
             isOneToOne: false
             referencedRelation: "organisations"

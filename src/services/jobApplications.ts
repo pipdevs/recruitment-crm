@@ -63,7 +63,7 @@ export const jobApplicationsService = {
 
   // Updates first, then logs on the candidate, so a rejected update records nothing.
   async updateStage(
-    application: { id: string; candidate_id: string; stage: string },
+    application: { id: string; candidate_id: string; job_id: string; stage: string },
     stage: string,
     jobTitle: string,
     authorId: string
@@ -73,7 +73,7 @@ export const jobApplicationsService = {
       .update({ stage, updated_at: new Date().toISOString() })
       .eq('id', application.id);
     if (error) throw error;
-    await activitiesService.createStageMove(application.candidate_id, jobTitle, application.stage, stage, authorId);
+    await activitiesService.createStageMove(application, jobTitle, application.stage, stage, authorId);
   },
 
   async update(id: string, updates: JobApplicationUpdate) {

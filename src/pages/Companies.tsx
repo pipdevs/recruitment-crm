@@ -344,9 +344,6 @@ export function CompanyDetail() {
           <ActivityPanel
             entityType="company"
             entityId={company.id}
-            addNote={(content, userId) => companiesService.addNote(company.id, content, userId)}
-            getNotes={(id) => companiesService.getNotes(id)}
-            deleteNote={(noteId) => companiesService.deleteNote(noteId)}
           />
         </div>
       </div>

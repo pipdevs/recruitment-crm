@@ -349,9 +349,6 @@ export function JobDetail() {
           <ActivityPanel
             entityType="job"
             entityId={job.id}
-            addNote={(content, userId) => jobsService.addNote(job.id, content, userId)}
-            getNotes={(id) => jobsService.getNotes(id)}
-            deleteNote={(noteId) => jobsService.deleteNote(noteId)}
           />
         </div>
       </div>
